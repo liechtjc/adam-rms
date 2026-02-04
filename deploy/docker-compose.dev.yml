@@ -1,0 +1,141 @@
+# AdamRMS Development Stack
+# Deploy on Portainer for dev/testing environment
+#
+# Required environment variables (set in Portainer):
+#   DOMAIN              - e.g., dev-loc.slashproduction.ch
+#   MYSQL_ROOT_PASSWORD - MySQL root password
+#   DB_PASSWORD         - Application database password
+#
+# Optional (have defaults):
+#   DB_DATABASE, DB_USERNAME, GIT_BRANCH
+
+services:
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password --innodb-thread-concurrency=0 --sort_buffer_size=512K
+    container_name: ${COMPOSE_PROJECT_NAME:-adamrms-dev}-db
+    networks:
+      - internal-net
+    volumes:
+      - db_data:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-adamrms}
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME:-adamrms}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      timeout: 20s
+      retries: 10
+
+  adamrms:
+    build:
+      context: https://github.com/liechtjc/adam-rms.git#${GIT_BRANCH:-dev}
+      dockerfile: Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME:-adamrms-dev}-app
+    networks:
+      - internal-net
+      - traefik-network
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOSTNAME: db
+      DB_DATABASE: ${DB_DATABASE:-adamrms}
+      DB_USERNAME: ${DB_USERNAME:-adamrms}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PORT: "3306"
+      DEV_MODE: "true"
+      # S3Mock configuration
+      CONFIG_AWS_S3_KEY: s3mockAccessKey
+      CONFIG_AWS_S3_SECRET: s3mockSecretKey
+      CONFIG_AWS_S3_BUCKET: adamrms-files
+      CONFIG_AWS_S3_REGION: eu-central-1
+      CONFIG_AWS_S3_ENDPOINT_PATHSTYLE: Enabled
+      CONFIG_AWS_S3_BROWSER_ENDPOINT: https://${DOMAIN}/s3/adamrms-files
+      CONFIG_AWS_S3_SERVER_ENDPOINT: http://s3mock:9090/adamrms-files
+      CONFIG_AWS_CLOUDFRONT_ENDPOINT: https://${DOMAIN}/s3/adamrms-files
+      # Email configuration (Mailpit)
+      CONFIG_EMAILS_ENABLED: "true"
+      CONFIG_EMAILS_PROVIDER: SMTP
+      CONFIG_EMAILS_FROM_EMAIL: noreply@${DOMAIN}
+      CONFIG_EMAILS_SMTP_SERVER: mailpit
+      CONFIG_EMAILS_SMTP_PORT: "1025"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-network"
+      # HTTP redirect to HTTPS
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}.entrypoints=web"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME:-adamrms-dev}-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}.middlewares=${COMPOSE_PROJECT_NAME:-adamrms-dev}-https"
+      # HTTPS
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-secure.entrypoints=websecure"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-secure.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-secure.tls=true"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-secure.tls.certresolver=httpresolver"
+      - "traefik.http.services.${COMPOSE_PROJECT_NAME:-adamrms-dev}.loadbalancer.server.port=80"
+
+  s3mock:
+    image: adobe/s3mock:3.5.2
+    container_name: ${COMPOSE_PROJECT_NAME:-adamrms-dev}-s3mock
+    networks:
+      - internal-net
+      - traefik-network
+    restart: unless-stopped
+    environment:
+      initialBuckets: adamrms-files
+      retainFilesOnExit: "true"
+    volumes:
+      - s3_data:/s3mockroot
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-network"
+      # S3Mock accessible via /s3/ path prefix
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-s3.entrypoints=websecure"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-s3.rule=Host(`${DOMAIN}`) && PathPrefix(`/s3/`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-s3.tls=true"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-s3.tls.certresolver=httpresolver"
+      - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME:-adamrms-dev}-s3-strip.stripprefix.prefixes=/s3"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-s3.middlewares=${COMPOSE_PROJECT_NAME:-adamrms-dev}-s3-strip"
+      - "traefik.http.services.${COMPOSE_PROJECT_NAME:-adamrms-dev}-s3.loadbalancer.server.port=9090"
+
+  mailpit:
+    image: axllent/mailpit:v1.20
+    container_name: ${COMPOSE_PROJECT_NAME:-adamrms-dev}-mailpit
+    networks:
+      - internal-net
+      - traefik-network
+    restart: unless-stopped
+    environment:
+      MP_MAX_MESSAGES: 5000
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    volumes:
+      - mailpit_data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-network"
+      # Mailpit UI accessible via /mail/ path prefix
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-mail.entrypoints=websecure"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-mail.rule=Host(`${DOMAIN}`) && PathPrefix(`/mail`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-mail.tls=true"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-mail.tls.certresolver=httpresolver"
+      - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME:-adamrms-dev}-mail-strip.stripprefix.prefixes=/mail"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-mail.middlewares=${COMPOSE_PROJECT_NAME:-adamrms-dev}-mail-strip"
+      - "traefik.http.services.${COMPOSE_PROJECT_NAME:-adamrms-dev}-mail.loadbalancer.server.port=8025"
+
+volumes:
+  db_data:
+  s3_data:
+  mailpit_data:
+
+networks:
+  internal-net:
+    driver: bridge
+  traefik-network:
+    external: true

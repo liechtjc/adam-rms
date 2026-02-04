@@ -1,0 +1,77 @@
+# AdamRMS Production Stack
+# Deploy on Portainer for production environment
+#
+# Required environment variables (set in Portainer):
+#   DOMAIN              - e.g., loc.slashproduction.ch
+#   MYSQL_ROOT_PASSWORD - MySQL root password
+#   DB_PASSWORD         - Application database password
+#
+# Optional (have defaults):
+#   DB_DATABASE, DB_USERNAME, GIT_BRANCH
+#
+# Note: S3 storage is configured via the AdamRMS web UI (Server Settings)
+
+services:
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password --innodb-thread-concurrency=0 --sort_buffer_size=512K
+    container_name: ${COMPOSE_PROJECT_NAME:-adamrms}-db
+    networks:
+      - internal-net
+    volumes:
+      - db_data:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-adamrms}
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME:-adamrms}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      timeout: 20s
+      retries: 10
+
+  adamrms:
+    build:
+      context: https://github.com/liechtjc/adam-rms.git#${GIT_BRANCH:-main}
+      dockerfile: Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME:-adamrms}-app
+    networks:
+      - internal-net
+      - traefik-network
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOSTNAME: db
+      DB_DATABASE: ${DB_DATABASE:-adamrms}
+      DB_USERNAME: ${DB_USERNAME:-adamrms}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PORT: "3306"
+      DEV_MODE: "false"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-network"
+      # HTTP redirect to HTTPS
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms}.entrypoints=web"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms}.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME:-adamrms}-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms}.middlewares=${COMPOSE_PROJECT_NAME:-adamrms}-https"
+      # HTTPS
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms}-secure.entrypoints=websecure"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms}-secure.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms}-secure.tls=true"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms}-secure.tls.certresolver=httpresolver"
+      - "traefik.http.services.${COMPOSE_PROJECT_NAME:-adamrms}.loadbalancer.server.port=80"
+
+volumes:
+  db_data:
+
+networks:
+  internal-net:
+    driver: bridge
+  traefik-network:
+    external: true

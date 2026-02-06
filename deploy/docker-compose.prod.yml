@@ -52,6 +52,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_PORT: "3306"
       DEV_MODE: "false"
+      CONFIG_ROOTURL: https://${DOMAIN}
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-network"

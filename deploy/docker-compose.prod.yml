@@ -13,7 +13,7 @@
 
 services:
   db:
-    image: mysql:8.0
+    image: index.docker.io/mysql/mysql-server:8.0
     command: --default-authentication-plugin=mysql_native_password --innodb-thread-concurrency=0 --sort_buffer_size=512K
     container_name: ${COMPOSE_PROJECT_NAME:-adamrms}-db
     networks:
@@ -70,6 +70,8 @@ services:
 
 volumes:
   db_data:
+    external: true
+    name: ${DB_VOLUME_NAME:-adam-rms_db_data}
 
 networks:
   internal-net:

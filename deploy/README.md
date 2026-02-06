@@ -17,7 +17,7 @@ Docker Compose files for deploying AdamRMS via Portainer.
 2. Choose **Repository**
 3. Configure:
    - **Repository URL:** `https://github.com/liechtjc/adam-rms`
-   - **Reference:** `stage` or `production` (matching your target)
+   - **Reference:** `refs/heads/stage` or `refs/heads/production` (matching your target)
    - **Compose path:** `deploy/docker-compose.stage.yml` or `deploy/docker-compose.prod.yml`
 
 ### 2. Environment Variables
@@ -28,7 +28,7 @@ Set these in Portainer's **Environment variables** section:
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DOMAIN` | Public domain for this deployment | `dev-loc.example.com` |
+| `DOMAIN` | Public domain for this deployment | `staging.example.com` |
 | `MYSQL_ROOT_PASSWORD` | MySQL root password | (generate secure password) |
 | `DB_PASSWORD` | Application database password | (generate secure password) |
 

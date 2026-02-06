@@ -2,7 +2,7 @@
 # Deploy on Portainer for production environment
 #
 # Required environment variables (set in Portainer):
-#   DOMAIN              - e.g., loc.slashproduction.ch
+#   DOMAIN              - Public domain for this deployment
 #   MYSQL_ROOT_PASSWORD - MySQL root password
 #   DB_PASSWORD         - Application database password
 #

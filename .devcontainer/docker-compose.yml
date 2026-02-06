@@ -24,8 +24,10 @@ services:
     # Uncomment the next line to use a non-root user for all processes.
     # user: vscode
     depends_on:
-      - db
-      - s3filestore
+      db:
+        condition: service_healthy
+      s3filestore:
+        condition: service_started
 
     # Use "forwardPorts" in **devcontainer.json** to forward an app port locally.
     # (Adding the "ports" property to this file will not forward from a Codespace.)
@@ -36,15 +38,17 @@ services:
       - DB_PASSWORD=pass
       - DB_PORT=3306
       - DEV_MODE=true
-      - CONFIG_ROOTURL=http://localhost:8080
+      # CONFIG_ROOTURL is intentionally NOT set here so the app auto-detects
+      # from $_SERVER['HTTP_HOST']. This ensures it works whether accessed via
+      # localhost:8080 (Docker Desktop) or 192.168.64.2:8080 (Colima).
       - CONFIG_AWS_S3_KEY=key-id-of-top-secret-key
       - CONFIG_AWS_S3_SECRET=topsecretkeydonottellanyone
       - CONFIG_AWS_S3_BUCKET=localtestingbucket
-      - CONFIG_AWS_S3_BROWSER_ENDPOINT=http://localhost:8081/localtestingbucket
+      - CONFIG_AWS_S3_BROWSER_ENDPOINT=http://${DEVCONTAINER_HOST:-localhost}:8081/localtestingbucket
       - CONFIG_AWS_S3_SERVER_ENDPOINT=http://s3filestore:8081/localtestingbucket
       - CONFIG_AWS_S3_ENDPOINT_PATHSTYLE=Enabled
       - CONFIG_AWS_S3_REGION=devcontainer-east-1
-      - CONFIG_AWS_CLOUDFRONT_ENDPOINT=http://localhost:8081/localtestingbucket
+      - CONFIG_AWS_CLOUDFRONT_ENDPOINT=http://${DEVCONTAINER_HOST:-localhost}:8081/localtestingbucket
       - CONFIG_EMAILS_ENABLED=true
       - CONFIG_EMAILS_PROVIDER=SMTP
       - CONFIG_EMAILS_FROM_EMAIL=adamrms@devcontainer.local
@@ -66,6 +70,10 @@ services:
       - MYSQL_ROOT_PASSWORD=pass
       - MYSQL_USER=user
       - MYSQL_PASSWORD=pass
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
   s3filestore:
     image: adobe/s3mock:3.5.2
     restart: unless-stopped

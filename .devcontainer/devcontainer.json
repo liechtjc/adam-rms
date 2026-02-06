@@ -60,22 +60,27 @@
   "portsAttributes": {
     "8080": {
       "label": "PHP Web Server",
-      "onAutoForward": "ignore",
+      "onAutoForward": "notify",
       "protocol": "http"
     },
     "8081": {
-      "label": "S3 Emulator (s3mock)"
+      "label": "S3 Emulator (s3mock)",
+      "onAutoForward": "silent",
+      "protocol": "http"
     },
     "8082": {
       "label": "phpMyAdmin",
-      "protocol": "https"
+      "onAutoForward": "silent",
+      "protocol": "http"
     },
     "8083": {
       "label": "Mailpit (Emails)",
+      "onAutoForward": "silent",
       "protocol": "http"
     },
     "3306": {
-      "label": "MySQL"
+      "label": "MySQL",
+      "onAutoForward": "silent"
     }
   }
 }

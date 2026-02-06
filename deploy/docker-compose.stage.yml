@@ -33,7 +33,7 @@ services:
 
   adamrms:
     build:
-      context: https://github.com/liechtjc/adam-rms.git#${GIT_BRANCH:-dev}
+      context: https://github.com/liechtjc/adam-rms.git#${GIT_BRANCH:-stage}
       dockerfile: Dockerfile
     container_name: ${COMPOSE_PROJECT_NAME:-adamrms-dev}-app
     networks:
@@ -115,6 +115,7 @@ services:
       MP_MAX_MESSAGES: 5000
       MP_SMTP_AUTH_ACCEPT_ANY: 1
       MP_SMTP_AUTH_ALLOW_INSECURE: 1
+      MP_UI_AUTH: ${MAILPIT_AUTH:-admin:changeme}
     volumes:
       - mailpit_data:/data
     labels:

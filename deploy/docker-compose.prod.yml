@@ -35,7 +35,7 @@ services:
 
   adamrms:
     build:
-      context: https://github.com/liechtjc/adam-rms.git#${GIT_BRANCH:-main}
+      context: https://github.com/liechtjc/adam-rms.git#${GIT_BRANCH:-production}
       dockerfile: Dockerfile
     container_name: ${COMPOSE_PROJECT_NAME:-adamrms}-app
     networks:

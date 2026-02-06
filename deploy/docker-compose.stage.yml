@@ -117,6 +117,7 @@ services:
       MP_SMTP_AUTH_ACCEPT_ANY: 1
       MP_SMTP_AUTH_ALLOW_INSECURE: 1
       MP_UI_AUTH: ${MAILPIT_AUTH:-admin:changeme}
+      MP_WEBROOT: /mail
     volumes:
       - mailpit_data:/data
     labels:
@@ -127,8 +128,7 @@ services:
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-mail.rule=Host(`${DOMAIN}`) && PathPrefix(`/mail`)"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-mail.tls=true"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-mail.tls.certresolver=httpresolver"
-      - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME:-adamrms-dev}-mail-strip.stripprefix.prefixes=/mail"
-      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-adamrms-dev}-mail.middlewares=${COMPOSE_PROJECT_NAME:-adamrms-dev}-mail-strip"
+      # No strip-prefix needed: MP_WEBROOT handles the /mail prefix
       - "traefik.http.services.${COMPOSE_PROJECT_NAME:-adamrms-dev}-mail.loadbalancer.server.port=8025"
 
 volumes:

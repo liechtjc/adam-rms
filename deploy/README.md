@@ -31,6 +31,7 @@ Set these in Portainer's **Environment variables** section:
 | `DOMAIN` | Public domain for this deployment | `staging.example.com` |
 | `MYSQL_ROOT_PASSWORD` | MySQL root password | (generate secure password) |
 | `DB_PASSWORD` | Application database password | (generate secure password) |
+| `CONFIG_ROOTURL` | Full HTTPS URL (prevents mixed content behind Traefik) | `https://staging.example.com` |
 
 #### Optional Variables (have defaults)
 
@@ -39,7 +40,7 @@ Set these in Portainer's **Environment variables** section:
 | `DB_DATABASE` | `adamrms` | Database name |
 | `DB_USERNAME` | `adamrms` | Database user |
 | `GIT_BRANCH` | `stage` or `production` | Branch to build from |
-| `COMPOSE_PROJECT_NAME` | `adamrms-dev` / `adamrms` | Container name prefix |
+| `COMPOSE_PROJECT_NAME` | `adamrms-stage` / `adamrms-prod` | Container name prefix |
 | `MAILPIT_AUTH` | `admin:changeme` | Mailpit UI credentials (stage stack only, format: `user:password`) |
 
 ### 3. Deploy

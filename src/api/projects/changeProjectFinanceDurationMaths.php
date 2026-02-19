@@ -9,8 +9,8 @@ if (
     !isset($_POST['projects_dates_finances_days']) or !isset($_POST['projects_dates_finances_weeks'])
 ) die("404");
 
-$DAYS = intval($_POST['projects_dates_finances_days']);
-$WEEKS = intval($_POST['projects_dates_finances_weeks']);
+$DAYS = round(floatval($_POST['projects_dates_finances_days']), 1);
+$WEEKS = round(floatval($_POST['projects_dates_finances_weeks']), 1);
 $REMOVECUSTOM = $_POST['projects_dates_finances_days'] == -1 and $_POST['projects_dates_finances_weeks'] == -1;
 
 $DBLIB->where("projects.instances_id", $AUTH->data['instance']['instances_id']);

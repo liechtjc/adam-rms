@@ -78,6 +78,7 @@
                             <div class="form-group">
                                 <label>Business</label>
                                 <select class="form-control select2 select2bs4" name="instance_id">
+                                    <option {{ searchResults.SEARCH.INSTANCE_ID == 'all' ? 'selected' : '' }} value="all">All</option>
                                     {% for instance in USERDATA.instances %}
                                         <option {{ searchResults.SEARCH.INSTANCE_ID == instance.instances_id ? 'selected' : '' }}  value="{{instance.instances_id}}">{{instance.instances_name}}</option>
                                     {% endfor %}

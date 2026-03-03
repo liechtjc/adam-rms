@@ -14,7 +14,7 @@ if (count($dates) == 2) {
 
 $DBLIB->setTrace(true, $_SERVER['SERVER_ROOT']);
 $SEARCH = [
-    "INSTANCE_ID" => in_array($_GET['instance_id'],$AUTH->data['instance_ids']) ? $_GET['instance_id'] : $AUTH->data['instance']['instances_id'],
+    "INSTANCE_ID" => in_array($_GET['instance_id'], $AUTH->data['instance_ids']) ? $_GET['instance_id'] : 'all',
     "PROJECT_ID" => $_GET['project'] ?: false,
     "PROJECT_REFERER" => $_GET['project_referer'] ?: false,
     "PAGE" =>  $_GET['page'] ? intval($_GET['page']) : 1,
@@ -51,10 +51,14 @@ $RETURN = [
     ]
 ];
 
-$DBLIB->where("instances_id",$SEARCH['INSTANCE_ID']);
-$DBLIB->where("instances_deleted",0);
-$SEARCH['INSTANCE'] = $DBLIB->getone("instances",['instances_id','instances_config_currency']);
-if (!$SEARCH['INSTANCE']) die($TWIG->render('404.twig', $PAGEDATA));
+if ($SEARCH['INSTANCE_ID'] === 'all') {
+    $SEARCH['INSTANCE'] = ['instances_config_currency' => $AUTH->data['instance']['instances_config_currency']];
+} else {
+    $DBLIB->where("instances_id", $SEARCH['INSTANCE_ID']);
+    $DBLIB->where("instances_deleted", 0);
+    $SEARCH['INSTANCE'] = $DBLIB->getone("instances", ['instances_id', 'instances_config_currency']);
+    if (!$SEARCH['INSTANCE']) die($TWIG->render('404.twig', $PAGEDATA));
+}
 
 //Evaluate dates or project
 if ($SEARCH['PROJECT_ID'] and $AUTH->instancePermissionCheck("PROJECTS:PROJECT_ASSETS:CREATE:ASSIGN_AND_UNASSIGN")) {
@@ -129,7 +133,11 @@ if (count($SEARCH['TERMS']['KEYWORDS']) > 0) {
 
 //Limit the assets correctly
 $subQuery = $DBLIB->subQuery();
-$subQuery->where("assets.instances_id",$SEARCH['INSTANCE_ID']);
+if ($SEARCH['INSTANCE_ID'] === 'all') {
+    $subQuery->where("assets.instances_id", $AUTH->data['instance_ids'], 'IN');
+} else {
+    $subQuery->where("assets.instances_id", $SEARCH['INSTANCE_ID']);
+}
 $subQuery->where("assets_deleted",0);
 if (!$SEARCH['SETTINGS']['SHOWARCHIVED']) $subQuery->where ("(assets.assets_endDate IS NULL OR assets.assets_endDate >= '" . date ("Y-m-d H:i:s") . "')");
 
@@ -167,14 +175,23 @@ $DBLIB->where("assetTypes_id", $subQuery, 'in');
 
 //The actual select
 $DBLIB->pageLimit = $SEARCH["PAGE_LIMIT"];
-$DBLIB->where("(assetTypes.instances_id IS NULL OR assetTypes.instances_id = ?)",[$SEARCH['INSTANCE_ID']]);
+if ($SEARCH['INSTANCE_ID'] === 'all') {
+    $instanceIdsStr = implode(',', array_map('intval', $AUTH->data['instance_ids']));
+    $DBLIB->where("(assetTypes.instances_id IS NULL OR assetTypes.instances_id IN ($instanceIdsStr))");
+} else {
+    $DBLIB->where("(assetTypes.instances_id IS NULL OR assetTypes.instances_id = ?)", [$SEARCH['INSTANCE_ID']]);
+}
 $assets = $DBLIB->arraybuilder()->paginate('assetTypes', $SEARCH["PAGE"], ["assetTypes.*", "manufacturers.*", "assetCategories.*", "assetCategoriesGroups_name"]);
 $RETURN['PAGINATION']['TOTAL-PAGES'] = $DBLIB->totalPages;
 $RETURN['PAGINATION']['COUNT'] = $DBLIB->totalCount;
 $RETURN['PAGINATION']['OFFSET'] = $SEARCH["PAGE_LIMIT"]*($SEARCH["PAGE"]-1);
 foreach ($assets as $asset) {
     $DBLIB->where("assets.assetTypes_id", $asset['assetTypes_id']);
-    $DBLIB->where("assets.instances_id",$SEARCH['INSTANCE_ID']);
+    if ($SEARCH['INSTANCE_ID'] === 'all') {
+        $DBLIB->where("assets.instances_id", $AUTH->data['instance_ids'], 'IN');
+    } else {
+        $DBLIB->where("assets.instances_id", $SEARCH['INSTANCE_ID']);
+    }
     $DBLIB->where("assets_deleted",0);
     if (!$SEARCH['SETTINGS']['SHOWARCHIVED']) $DBLIB->where ("(assets.assets_endDate IS NULL OR assets.assets_endDate >= '" . date ("Y-m-d H:i:s") . "')");
     if ($SEARCH['TERMS']['GROUPS']) {
@@ -257,21 +274,35 @@ $PAGEDATA['searchOptions']['projects'] = $DBLIB->get("projects", null, ["project
 if (count($SEARCH['TERMS']['GROUPS']) > 0) {
   $DBLIB->where("(users_userid IS NULL OR users_userid = '" . $AUTH->data['users_userid'] . "')");
   $DBLIB->where("assetGroups_id", $SEARCH['TERMS']['GROUPS'], "IN");
-  $DBLIB->where("instances_id", $SEARCH['INSTANCE_ID']);
+  if ($SEARCH['INSTANCE_ID'] === 'all') {
+    $DBLIB->where("instances_id", $AUTH->data['instance_ids'], 'IN');
+  } else {
+    $DBLIB->where("instances_id", $SEARCH['INSTANCE_ID']);
+  }
   $DBLIB->where("assetGroups_deleted",0);
   $SEARCH['SELECTED_TERMS']['GROUPS'] = $DBLIB->get('assetGroups',null,["assetGroups_name","assetGroups_id"]);
 } else $SEARCH['SELECTED_TERMS']['GROUPS'] = [];
 
 if (count($SEARCH['TERMS']['MANUFACTURER']) > 0) {
   $DBLIB->where("manufacturers_id", $SEARCH['TERMS']['MANUFACTURER'], "IN");
-  $DBLIB->where("(manufacturers.instances_id IS NULL OR manufacturers.instances_id = '" . intval($SEARCH['INSTANCE_ID']) . "')");
+  if ($SEARCH['INSTANCE_ID'] === 'all') {
+    $instanceIdsStr = implode(',', array_map('intval', $AUTH->data['instance_ids']));
+    $DBLIB->where("(manufacturers.instances_id IS NULL OR manufacturers.instances_id IN ($instanceIdsStr))");
+  } else {
+    $DBLIB->where("(manufacturers.instances_id IS NULL OR manufacturers.instances_id = '" . intval($SEARCH['INSTANCE_ID']) . "')");
+  }
   $SEARCH['SELECTED_TERMS']['MANUFACTURER'] = $DBLIB->get('manufacturers', null, ["manufacturers.manufacturers_id", "manufacturers.manufacturers_name"]);
 } else $SEARCH['SELECTED_TERMS']['MANUFACTURER'] = [];
 
 if (count($SEARCH['TERMS']['CATEGORY']) > 0) {
   $DBLIB->where("assetCategories_id", $SEARCH['TERMS']['CATEGORY'], "IN");
   $DBLIB->where("assetCategories_deleted",0);
-  $DBLIB->where("(assetCategories.instances_id IS NULL OR assetCategories.instances_id = '" . intval($SEARCH['INSTANCE_ID']) . "')");
+  if ($SEARCH['INSTANCE_ID'] === 'all') {
+    $instanceIdsStr = implode(',', array_map('intval', $AUTH->data['instance_ids']));
+    $DBLIB->where("(assetCategories.instances_id IS NULL OR assetCategories.instances_id IN ($instanceIdsStr))");
+  } else {
+    $DBLIB->where("(assetCategories.instances_id IS NULL OR assetCategories.instances_id = '" . intval($SEARCH['INSTANCE_ID']) . "')");
+  }
   $DBLIB->join("assetCategoriesGroups", "assetCategoriesGroups.assetCategoriesGroups_id=assetCategories.assetCategoriesGroups_id", "LEFT");
   $SEARCH['SELECTED_TERMS']['CATEGORY'] = $DBLIB->get('assetCategories', null, ["assetCategories_id", "assetCategories_name", "assetCategoriesGroups_name"]);
 } else $SEARCH['SELECTED_TERMS']['CATEGORY'] = [];

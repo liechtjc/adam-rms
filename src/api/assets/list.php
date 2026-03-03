@@ -6,6 +6,7 @@ else $PAGEDATA['search'] = null;
 
 if (isset($_POST['page'])) $page = $bCMS->sanitizeString($_POST['page']);
 else $page = 1;
+$nopage = isset($_POST['nopage']) && $_POST['nopage'];
 $DBLIB->pageLimit = (isset($_POST['pageLimit']) ? $_POST['pageLimit'] : 20); //Users per page
 if (isset($_POST['category'])) $DBLIB->where("assetTypes.assetCategories_id", $_POST['category']);
 if (isset($_POST['manufacturer'])) $DBLIB->where("manufacturers.manufacturers_id", $_POST['manufacturer']);
@@ -24,8 +25,13 @@ if (strlen($PAGEDATA['search']) > 0) {
 		assetTypes_name LIKE '%" . $bCMS->sanitizeStringMYSQL($PAGEDATA['search']) . "%' 
     )");
 }
-$assets = $DBLIB->arraybuilder()->paginate('assetTypes', $page, ["assetTypes.*", "manufacturers.*", "assetCategories.*", "assetCategoriesGroups_name"]);
-$PAGEDATA['pagination'] = ["page" => $page, "total" => $DBLIB->totalPages];
+if ($nopage) {
+    $assets = $DBLIB->arraybuilder()->get('assetTypes', null, ["assetTypes.*", "manufacturers.*", "assetCategories.*", "assetCategoriesGroups_name"]);
+    $PAGEDATA['pagination'] = null;
+} else {
+    $assets = $DBLIB->arraybuilder()->paginate('assetTypes', $page, ["assetTypes.*", "manufacturers.*", "assetCategories.*", "assetCategoriesGroups_name"]);
+    $PAGEDATA['pagination'] = ["page" => $page, "total" => $DBLIB->totalPages];
+}
 
 $PAGEDATA['assets'] = [];
 foreach ($assets as $asset) {
@@ -126,10 +132,18 @@ finish(true, null, ["assets" => $PAGEDATA['assets'], "pagination" => $PAGEDATA['
  *         name="pageLimit",
  *         in="query",
  *         description="The number of items to get per page",
- *         required="false", 
+ *         required="false",
  *         @OA\Schema(
- *             type="integer"), 
- *         ), 
+ *             type="integer"),
+ *         ),
+ *     @OA\Parameter(
+ *         name="nopage",
+ *         in="query",
+ *         description="If set and truthy, returns all asset types without pagination. The pagination field in the response will be null.",
+ *         required="false",
+ *         @OA\Schema(
+ *             type="boolean"),
+ *         ),
  *     @OA\Parameter(
  *         name="category",
  *         in="query",

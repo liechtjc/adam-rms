@@ -327,13 +327,9 @@
             {% if "ASSETS:ASSET_CATEGORIES:DELETE"|instancePermissions %}
             $(".deleteButton").click(function () {
                 var id = $(this).data("id");
-                var isShared = $(this).data("shared") === '1';
-                var message = isShared
-                    ? "<strong>This is a shared category visible to all businesses.</strong> Hiding it will affect all businesses. Categories aren't fully deleted until all assets are moved to other categories."
-                    : "Categories aren't fully deleted until all assets in the category are moved to other categories";
                 bootbox.confirm({
                     title:"Are you sure?",
-                    message: message,
+                    message: "<ul><li><strong>This is a shared category visible to all businesses</strong> — hiding it will affect all businesses.</li><li>Categories are never permanently deleted — <strong>assets must be moved to another category first.</strong></li></ul>",
                     buttons: {
                         confirm: {
                             label: 'Yes',
@@ -356,13 +352,9 @@
             });
             $(".deleteGroupButton").click(function () {
                 var id = $(this).data("id");
-                var isShared = $(this).data("shared") === '1';
-                var message = isShared
-                    ? "<strong>This is a shared group visible to all businesses.</strong> Hiding it and all its categories will affect all businesses."
-                    : "This will delete this group and any categories within it. Categories aren't fully deleted until all assets in the category are moved to other categories";
                 bootbox.confirm({
                     title:"Are you sure?",
-                    message: message,
+                    message: "<ul><li><strong>This is a shared group visible to all businesses</strong> — hiding it and all its categories will affect all businesses.</li><li>Groups are never permanently deleted.</li></ul>",
                     buttons: {
                         confirm: {
                             label: 'Yes',

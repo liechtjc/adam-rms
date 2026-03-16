@@ -45,18 +45,15 @@
                                 </td>
                                 <td>
                                     <div class="btn-group">
-                                    {% if group.instances_id is not null %}
-                                        {% if "ASSETS:ASSET_CATEGORIES:EDIT"|instancePermissions %}
-                                            <button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#editModal{{ group.assetCategoriesGroups_id }}"><i class="fas fa-edit"></i></button>
-                                        {% endif %}
-                                        {% if "ASSETS:ASSET_CATEGORIES:DELETE"|instancePermissions %}
-                                            <button type="button" class="btn btn-danger btn-sm deleteGroupButton" data-id="{{ group.assetCategoriesGroups_id }}"><i class="fas fa-trash"></i></button>
-                                        {% endif %}
+                                    {% if "ASSETS:ASSET_CATEGORIES:EDIT"|instancePermissions %}
+                                        <button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#editModal{{ group.assetCategoriesGroups_id }}"><i class="fas fa-edit"></i></button>
+                                    {% endif %}
+                                    {% if "ASSETS:ASSET_CATEGORIES:DELETE"|instancePermissions %}
+                                        <button type="button" class="btn btn-danger btn-sm deleteGroupButton" data-id="{{ group.assetCategoriesGroups_id }}" data-shared="{{ group.instances_id is null ? '1' : '0' }}"><i class="fas fa-trash"></i></button>
                                     {% endif %}
                                     </div>
                                 </td>
                             </tr>
-                            {% if group.instances_id is not null %}
                                     <div class="modal fade" id="editModal{{ group.assetCategoriesGroups_id }}">
                                         <div class="modal-dialog">
                                             <div class="modal-content">
@@ -67,6 +64,11 @@
                                                     </button>
                                                 </div>
                                                 <div class="modal-body">
+                                                    {% if group.instances_id is null %}
+                                                        <div class="alert alert-warning">
+                                                            <i class="fas fa-globe"></i> <strong>Shared group</strong> — changes will affect all businesses.
+                                                        </div>
+                                                    {% endif %}
                                                     <form class="editGroup-form" data-id="{{ group.assetCategoriesGroups_id }}">
                                                         <input type="hidden" name="assetCategoriesGroups_id" value="{{ group.assetCategoriesGroups_id }}"/>
                                                         <div class="input-group" style="margin-bottom: 5px;">
@@ -94,7 +96,6 @@
                                             </div>
                                         </div>
                                     </div>
-                                {% endif %}
                         </thead>
                         <tbody>
                             {% for category in group.categories %}
@@ -108,18 +109,15 @@
                                 <td style="width:70px;">
                                     <div class="btn-group">
                                         <a type="button" title="View assets" class="btn btn-default btn-sm" href="{{CONFIG.ROOTURL}}/assets.php?category%5B%5D={{ category.assetCategories_id }}&showlinked=1&showarchived=1"><i class="nav-icon fas fa-warehouse"></i></a>
-                                        {% if category.instances_id is not null %}
-                                            {% if "ASSETS:ASSET_CATEGORIES:EDIT"|instancePermissions %}
-                                                <button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#editModal{{ category.assetCategories_id }}"><i class="fas fa-edit"></i></button>
-                                            {% endif %}
-                                            {% if "ASSETS:ASSET_CATEGORIES:DELETE"|instancePermissions %}
-                                                <button type="button" class="btn btn-danger btn-sm deleteButton" data-id="{{ category.assetCategories_id }}"><i class="fas fa-trash"></i></button>
-                                            {% endif %}
+                                        {% if "ASSETS:ASSET_CATEGORIES:EDIT"|instancePermissions %}
+                                            <button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#editModal{{ category.assetCategories_id }}"><i class="fas fa-edit"></i></button>
+                                        {% endif %}
+                                        {% if "ASSETS:ASSET_CATEGORIES:DELETE"|instancePermissions %}
+                                            <button type="button" class="btn btn-danger btn-sm deleteButton" data-id="{{ category.assetCategories_id }}" data-shared="{{ category.instances_id is null ? '1' : '0' }}"><i class="fas fa-trash"></i></button>
                                         {% endif %}
                                     </div>
                                 </td>
                             </tr>
-                                {% if category.instances_id is not null %}
                                     <div class="modal fade" id="editModal{{ category.assetCategories_id }}">
                                         <div class="modal-dialog">
                                             <div class="modal-content">
@@ -130,6 +128,11 @@
                                                     </button>
                                                 </div>
                                                 <div class="modal-body">
+                                                    {% if category.instances_id is null %}
+                                                        <div class="alert alert-warning">
+                                                            <i class="fas fa-globe"></i> <strong>Shared category</strong> — changes will affect all businesses.
+                                                        </div>
+                                                    {% endif %}
                                                     <form class="edit-form" data-id="{{ category.assetCategories_id }}">
                                                         <input type="hidden" name="assetCategories_id" value="{{ category.assetCategories_id }}"/>
                                                         <div class="input-group" style="margin-bottom: 5px;">
@@ -167,7 +170,6 @@
                                             </div>
                                         </div>
                                     </div>
-                                {% endif %}
                             {% endfor %}
                         </tbody>
                         {% endif %}
@@ -325,9 +327,13 @@
             {% if "ASSETS:ASSET_CATEGORIES:DELETE"|instancePermissions %}
             $(".deleteButton").click(function () {
                 var id = $(this).data("id");
+                var isShared = $(this).data("shared") === '1';
+                var message = isShared
+                    ? "<strong>This is a shared category visible to all businesses.</strong> Hiding it will affect all businesses. Categories aren't fully deleted until all assets are moved to other categories."
+                    : "Categories aren't fully deleted until all assets in the category are moved to other categories";
                 bootbox.confirm({
                     title:"Are you sure?",
-                    message: "Categories aren't fully deleted until all assets in the category are moved to other categories",
+                    message: message,
                     buttons: {
                         confirm: {
                             label: 'Yes',
@@ -350,9 +356,13 @@
             });
             $(".deleteGroupButton").click(function () {
                 var id = $(this).data("id");
+                var isShared = $(this).data("shared") === '1';
+                var message = isShared
+                    ? "<strong>This is a shared group visible to all businesses.</strong> Hiding it and all its categories will affect all businesses."
+                    : "This will delete this group and any categories within it. Categories aren't fully deleted until all assets in the category are moved to other categories";
                 bootbox.confirm({
                     title:"Are you sure?",
-                    message: "This will delete this group and any categories within it. Categories aren't fully deleted until all assets in the category are moved to other categories",
+                    message: message,
                     buttons: {
                         confirm: {
                             label: 'Yes',

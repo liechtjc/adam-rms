@@ -9,7 +9,7 @@ foreach ($_POST['formData'] as $item) {
 }
 if (strlen($array['assetCategories_id']) <1) finish(false, ["code" => "PARAM-ERROR", "message"=> "No data for action"]);
 
-$DBLIB->where("instances_id", $AUTH->data['instance']['instances_id']);
+$DBLIB->where("(instances_id IS NULL OR instances_id = '" . $AUTH->data['instance']['instances_id'] . "')");
 $DBLIB->where("assetCategories_deleted", 0);
 $DBLIB->where("assetCategories_id", $array['assetCategories_id']);
 $category = $DBLIB->update("assetCategories", $array);

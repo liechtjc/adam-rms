@@ -8,7 +8,7 @@ foreach ($_POST['formData'] as $item) {
     $array[$item['name']] = $item['value'];
 }
 if (strlen($array['assetCategories_name']) <1) finish(false, ["code" => "PARAM-ERROR", "message"=> "No data for action"]);
-$array['instances_id'] = $AUTH->data['instance']['instances_id'];
+$array['instances_id'] = null;
 $category = $DBLIB->insert("assetCategories", $array);
 if (!$category) finish(false);
 

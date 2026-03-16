@@ -32,13 +32,18 @@
                             <tbody>
                             {% for manufacturer in manufacturers %}
                                 <tr>
-                                    <td>{{ manufacturer.manufacturers_name }}</td>
+                                    <td>
+                                        {{ manufacturer.manufacturers_name }}
+                                        {% if manufacturer.instances_id is null %}
+                                            <span class="badge badge-info ml-1">Shared</span>
+                                        {% endif %}
+                                    </td>
                                     <td><a href="{{ manufacturer.manufacturers_website }}" target="_blank">{{ manufacturer.manufacturers_website }}</a></td>
                                     <td>{{  manufacturer.manufacturers_notes|nl2br }}</td>
                                     <td>
                                         <div class="btn-group">
                                             <a href="{{CONFIG.ROOTURL}}/assets.php?manufacturer%5B%5D={{ manufacturer.manufacturers_id }}&showlinked=1&showarchived=1" class="btn btn-default btn-sm"><i class="fas fa-eye"></i></a>
-                                            {% if "ASSETS:MANUFACTURERS:EDIT"|instancePermissions and manufacturer.instances_id == AUTH.data.instance.instances_id %}
+                                            {% if "ASSETS:MANUFACTURERS:EDIT"|instancePermissions and (manufacturer.instances_id == AUTH.data.instance.instances_id or manufacturer.instances_id is null) %}
                                             <button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#editManufacturer-{{ manufacturer.manufacturers_id }}"><i class="fas fa-edit"></i></button>
                                             {% endif %}
                                         </div>
@@ -53,6 +58,11 @@
                                                         </button>
                                                     </div>
                                                     <div class="modal-body">
+                                                        {% if manufacturer.instances_id is null %}
+                                                            <div class="alert alert-warning">
+                                                                <i class="fas fa-globe"></i> <strong>Shared manufacturer</strong> — changes will affect all businesses.
+                                                            </div>
+                                                        {% endif %}
                                                         <form class="manufacturerEdit-form" data-manufacturerid="{{ manufacturer.manufacturers_id }}">
                                                             <input type="hidden" name="manufacturers_id" value="{{ manufacturer.manufacturers_id }}"/>
                                                             <div class="input-group" style="margin-bottom: 5px;">
@@ -70,6 +80,10 @@
                                                             <div class="input-group" style="margin-bottom: 5px;">
                                                                 <div class="input-group-prepend"><span class="input-group-text">Notes</span></div>
                                                                 <textarea class="form-control" rows="3" name="manufacturers_notes"  placeholder="">{{ manufacturer.manufacturers_notes }}</textarea>
+                                                            </div>
+                                                            <div class="form-check mt-2">
+                                                                <input type="checkbox" class="form-check-input" name="manufacturers_private" value="1" id="privateCheck-{{ manufacturer.manufacturers_id }}" {% if manufacturer.instances_id == AUTH.data.instance.instances_id %}checked{% endif %}>
+                                                                <label class="form-check-label" for="privateCheck-{{ manufacturer.manufacturers_id }}">Private <small class="text-muted">(only visible to this business)</small></label>
                                                             </div>
                                                         </form>
                                                     </div>
@@ -100,11 +114,25 @@
                 $("#loadingoverlay").hide();
                 {% if "ASSETS:MANUFACTURERS:CREATE"|instancePermissions %}
                 $("#newManufacturerButton").click(function () {
-                    bootbox.prompt("Enter Manufacturer Name", function (result) {
-                        if (result) {
-                            ajaxcall("manufacturer/new.php", {"manufacturers_name": result}, function (data) {
-                                location.reload();
-                            });
+                    bootbox.dialog({
+                        title: 'New Manufacturer',
+                        message: '<div class="form-group"><label>Name</label><input type="text" class="form-control" id="newManufacturerName" placeholder="Manufacturer name" required></div><div class="form-check mt-2"><input type="checkbox" class="form-check-input" id="newManufacturerPrivate"><label class="form-check-label" for="newManufacturerPrivate">Private <small class="text-muted">(only visible to this business)</small></label></div>',
+                        buttons: {
+                            cancel: { label: 'Cancel', className: 'btn-default' },
+                            confirm: {
+                                label: 'Create',
+                                className: 'btn-primary',
+                                callback: function () {
+                                    var name = $('#newManufacturerName').val().trim();
+                                    if (!name) return false;
+                                    ajaxcall("manufacturer/new.php", {
+                                        "manufacturers_name": name,
+                                        "manufacturers_private": $('#newManufacturerPrivate').is(':checked') ? '1' : '0'
+                                    }, function (data) {
+                                        location.reload();
+                                    });
+                                }
+                            }
                         }
                     });
                 });

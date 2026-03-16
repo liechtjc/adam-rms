@@ -22,9 +22,40 @@ if (isset($array['manufacturers_website']) && trim($array['manufacturers_website
   }
 }
 
-$DBLIB->where("instances_id", $AUTH->data['instance']['instances_id']);
+// Fetch manufacturer — must be global (NULL) or owned by current instance
 $DBLIB->where("manufacturers_id", $array['manufacturers_id']);
-$result = $DBLIB->update("manufacturers", array_intersect_key($array, array_flip(['manufacturers_name', 'manufacturers_website', 'manufacturers_notes'])), 1);
+$DBLIB->where("(instances_id IS NULL OR instances_id = '" . $AUTH->data['instance']['instances_id'] . "')");
+$manufacturer = $DBLIB->getOne("manufacturers");
+if (!$manufacturer) {
+  finish(false, ["code" => "NOT-FOUND", "message" => "Manufacturer not found or not accessible"]);
+}
+
+// Resolve new instances_id based on private flag
+$isCurrentlyGlobal = $manufacturer['instances_id'] === null;
+$wantsPrivate = isset($array['manufacturers_private']) && $array['manufacturers_private'] == '1';
+
+if ($wantsPrivate && $isCurrentlyGlobal) {
+  // Global → Private: only allowed if no other instance's assetTypes use this manufacturer
+  $DBLIB->where("manufacturers_id", $array['manufacturers_id']);
+  $DBLIB->where("(instances_id IS NULL OR instances_id != '" . $AUTH->data['instance']['instances_id'] . "')");
+  $usedByOthers = $DBLIB->getValue("assetTypes", "count(*)");
+  if ($usedByOthers > 0) {
+    finish(false, ["code" => "IN-USE", "message" => "This manufacturer is used by other businesses and cannot be made private."]);
+  }
+  $newInstancesId = $AUTH->data['instance']['instances_id'];
+} elseif (!$wantsPrivate) {
+  // Private → Global, or keep global
+  $newInstancesId = null;
+} else {
+  // Already private, keep as-is
+  $newInstancesId = $manufacturer['instances_id'];
+}
+
+$updateData = array_intersect_key($array, array_flip(['manufacturers_name', 'manufacturers_website', 'manufacturers_notes']));
+$updateData['instances_id'] = $newInstancesId;
+
+$DBLIB->where("manufacturers_id", $array['manufacturers_id']);
+$result = $DBLIB->update("manufacturers", $updateData, 1);
 if (!$result) {
   finish(false, ["code" => "UPDATE-FAIL", "message" => "Could not update manufacturer"]);
 }

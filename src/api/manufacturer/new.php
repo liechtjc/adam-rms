@@ -3,9 +3,13 @@ require_once __DIR__ . '/../apiHeadSecure.php';
 
 if (!$AUTH->instancePermissionCheck("ASSETS:MANUFACTURERS:CREATE") or !isset($_POST['manufacturers_name'])) die("404");
 
+$instances_id = (isset($_POST['manufacturers_private']) && $_POST['manufacturers_private'] == '1')
+    ? $AUTH->data['instance']['instances_id']
+    : null;
+
 $insert = $DBLIB->insert("manufacturers", [
     "manufacturers_name" => $_POST['manufacturers_name'],
-    "instances_id" => $AUTH->data['instance']['instances_id'],
+    "instances_id" => $instances_id,
 ]);
 if (!$insert) finish(false, ["code" => "CREATE-CLIENT-FAIL", "message"=> "Could not create new manufacturers"]);
 

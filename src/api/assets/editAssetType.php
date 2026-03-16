@@ -20,15 +20,33 @@ $array['assetTypes_dayRate'] = $moneyParser->parse(($array['assetTypes_dayRate']
 $array['assetTypes_weekRate'] = $moneyParser->parse(($array['assetTypes_weekRate'] ?? '0.00'), $AUTH->data['instance']['instances_config_currency'])->getAmount();
 
 if (!$AUTH->serverPermissionCheck("ASSETS:EDIT:ANY_ASSET_TYPE")) {
-    $DBLIB->where("(instances_id IS NOT NULL)");
-    $DBLIB->where("instances_id",$AUTH->data['instance']["instances_id"]);
+    // Allow editing own-instance types OR global types with a matching currency
+    $DBLIB->where("(instances_id IS NULL AND assetTypes_currency = '" . $AUTH->data['instance']['instances_config_currency'] . "' OR instances_id = '" . $AUTH->data['instance']['instances_id'] . "')");
 }
 $DBLIB->where("assetTypes_id", $array['assetTypes_id']);
-$assetType = $DBLIB->getone("assetTypes", ['assetTypes.assetTypes_mass','assetTypes.assetTypes_value',"assetTypes.assetTypes_dayRate","assetTypes.assetTypes_weekRate"]);
+$assetType = $DBLIB->getone("assetTypes", ['assetTypes.assetTypes_mass','assetTypes.assetTypes_value',"assetTypes.assetTypes_dayRate","assetTypes.assetTypes_weekRate","assetTypes.instances_id"]);
 if (!$assetType) finish(false);
 
+// Build update data from whitelisted fields
+$updateData = array_intersect_key( $array, array_flip( ['assetTypes_name','assetCategories_id','assetTypes_productLink','manufacturers_id','assetTypes_description','assetTypes_definableFields','assetTypes_mass','assetTypes_inserted',"assetTypes_dayRate","assetTypes_weekRate","assetTypes_value"] ) );
+
+// Handle private/global toggle
+$wantsPrivate = isset($array['assetTypes_private']) && $array['assetTypes_private'] == '1';
+$isCurrentlyGlobal = ($assetType['instances_id'] === null);
+if ($wantsPrivate && $isCurrentlyGlobal) {
+    // Global → Private: block if any other instance already has assets of this type
+    $DBLIB->where("assetTypes_id", $array['assetTypes_id']);
+    $DBLIB->where("instances_id", $AUTH->data['instance']['instances_id'], '!=');
+    $usedByOthers = $DBLIB->getValue("assets", "count(*)");
+    if ($usedByOthers > 0) finish(false, ["code" => "IN-USE", "message" => "This asset type is used by other businesses and cannot be made private."]);
+    $updateData['instances_id'] = $AUTH->data['instance']['instances_id'];
+} elseif (!$wantsPrivate && !$isCurrentlyGlobal) {
+    // Private → Global: always allowed
+    $updateData['instances_id'] = null;
+}
+
 $DBLIB->where("assetTypes_id",$array['assetTypes_id']);
-$result = $DBLIB->update("assetTypes", array_intersect_key( $array, array_flip( ['assetTypes_name','assetCategories_id','assetTypes_productLink','manufacturers_id','assetTypes_description','assetTypes_definableFields','assetTypes_mass','assetTypes_inserted',"assetTypes_dayRate","assetTypes_weekRate","assetTypes_value"] ) ));
+$result = $DBLIB->update("assetTypes", $updateData);
 if (!$result) finish(false, ["code" => "UPDATE-FAIL", "message"=> "Could not update asset type"]);
 else {
     $bCMS->auditLog("EDIT-ASSET-TYPE", "assetTypes", json_encode($array), $AUTH->data['users_userid'],null, $array['assetTypes_id']);

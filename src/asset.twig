@@ -1020,7 +1020,7 @@
                             </script>
                         </div>
                         {% endif %}
-                        {% if "ASSETS:ASSET_TYPES:EDIT"|instancePermissions and (asset.assetInstances_id != null or "ASSETS:EDIT:ANY_ASSET_TYPE"|serverPermissions) and ASSET_INSTANCE.instances_id == USERDATA.instance.instances_id  %}
+                        {% if "ASSETS:ASSET_TYPES:EDIT"|instancePermissions and (asset.assetInstances_id == USERDATA.instance.instances_id or asset.assetInstances_id is null or "ASSETS:EDIT:ANY_ASSET_TYPE"|serverPermissions) and ASSET_INSTANCE.instances_id == USERDATA.instance.instances_id  %}
                         <div class="tab-pane" style="padding:0"  id="settings">
                             <div class="card" style="margin-bottom:0;">
                                 <div class="card-header p-2">
@@ -1039,6 +1039,11 @@
                                                 }
                                             </style>
                                             <form id="addNewForm">
+                                            {% if asset.assetInstances_id is null %}
+                                            <div class="alert alert-warning" role="alert">
+                                                <strong>This is a shared asset type visible to all businesses.</strong> Changes to rates, values and details will affect all businesses.
+                                            </div>
+                                            {% endif %}
                                             <div class="input-group">
                                                 <div class="input-group-prepend"><span class="input-group-text">Name</span></div>
                                                 <input type="text" class="form-control" name="assetTypes_name" value="{{ asset.assetTypes_name}}" id="addNewType-name" />
@@ -1107,6 +1112,10 @@
                                                     <option {%  if manufacturer.manufacturers_id == asset.manufacturers_id %} selected {% endif %} value="{{ manufacturer.manufacturers_id }}">{{ manufacturer.manufacturers_name }}</option>
                                                 {% endfor %}
                                             </select>
+                                            <div class="form-check mt-2 mb-2">
+                                                <input type="checkbox" class="form-check-input" name="assetTypes_private" value="1" id="assetTypePrivateCheck" {% if asset.assetInstances_id == USERDATA.instance.instances_id %}checked{% endif %}>
+                                                <label class="form-check-label" for="assetTypePrivateCheck">Private <small>(only visible to this business)</small></label>
+                                            </div>
                                             </form>
                                             <button class="btn btn-default float-right" id="saveSettingsButton" style="margin-top:10px;margin-bottom:10px;">Save</button>
                                         </div>
@@ -1152,9 +1161,8 @@
                         {% elseif "ASSETS:ASSET_TYPES:EDIT"|instancePermissions %}
                         <div class="tab-pane" style="padding: 1.25rem" id="settings">
                             <div class="alert alert-info" role="alert">
-<h4 class="alert-heading">Asset type maintained by the {{ CONFIG.PROJECT_NAME }}</h4>Sorry - this asset type is shared between a number of different businesses as a pre-defined template, to edit it please
-<a href="{{ CONFIG.LINKS_SUPPORTURL }}">get in touch with support</a>
-
+                                <h4 class="alert-heading">Asset type belongs to another business</h4>
+                                This asset type belongs to <strong>{{ ASSET_INSTANCE.instances_name }}</strong>. Switch to that business to edit it.
                             </div>
                         </div>
                         {% endif %}

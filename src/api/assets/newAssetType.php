@@ -11,7 +11,10 @@ foreach ($_POST['formData'] as $item) {
 if (strlen($array['manufacturers_id']) <1) finish(false, ["code" => "PARAM-ERROR", "message"=> "No data for action"]);
 if (strlen($array['assetTypes_name']) <1) finish(false, ["code" => "PARAM-ERROR", "message"=> "No asset type name provided"]);
 
-$array['instances_id'] = $AUTH->data['instance']["instances_id"];
+// Default to global (null) unless explicitly marked private
+$array['instances_id'] = (isset($array['assetTypes_private']) && $array['assetTypes_private'] == '1')
+    ? $AUTH->data['instance']['instances_id']
+    : null;
 $array['assetTypes_inserted'] = date('Y-m-d H:i:s');
 $array['assetTypes_currency'] = $AUTH->data['instance']['instances_config_currency'];
 

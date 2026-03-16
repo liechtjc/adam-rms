@@ -10,10 +10,13 @@ if (isset($_POST['other_instances_id'])) {
     //check user has permission in other instance 
     if (!in_array("ASSETS:TRANSFER", $AUTH->data['instances'][array_search($_POST['other_instances_id'], array_column($AUTH->data['instances'], 'instances_id'))]['permissions'])) die("403");
 
-    $DBLIB->where("(assetTypes.instances_id IS NULL OR assetTypes.instances_id = '" . $_POST['other_instances_id'] . "')");
+    // Look up the target instance's currency from already-loaded AUTH data
+    $otherInstanceIdx = array_search($_POST['other_instances_id'], array_column($AUTH->data['instances'], 'instances_id'));
+    $otherCurrency = $AUTH->data['instances'][$otherInstanceIdx]['instances_config_currency'];
+    $DBLIB->where("(assetTypes.instances_id IS NULL AND assetTypes.assetTypes_currency = '" . $otherCurrency . "' OR assetTypes.instances_id = '" . $_POST['other_instances_id'] . "')");
 } else {
-    //We want the assetTypes that are in the current instance, or are not in any instance
-    $DBLIB->where("(assetTypes.instances_id IS NULL OR assetTypes.instances_id = '" . $AUTH->data['instance']['instances_id'] . "')");
+    //We want the assetTypes that are in the current instance, or global ones with a matching currency
+    $DBLIB->where("(assetTypes.instances_id IS NULL AND assetTypes.assetTypes_currency = '" . $AUTH->data['instance']['instances_config_currency'] . "' OR assetTypes.instances_id = '" . $AUTH->data['instance']['instances_id'] . "')");
 }
 
 if (isset($_POST['manufacturer'])) $DBLIB->where("assetTypes.manufacturers_id", $_POST['manufacturer']);

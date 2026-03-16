@@ -177,9 +177,9 @@ $DBLIB->where("assetTypes_id", $subQuery, 'in');
 $DBLIB->pageLimit = $SEARCH["PAGE_LIMIT"];
 if ($SEARCH['INSTANCE_ID'] === 'all') {
     $instanceIdsStr = implode(',', array_map('intval', $AUTH->data['instance_ids']));
-    $DBLIB->where("(assetTypes.instances_id IS NULL OR assetTypes.instances_id IN ($instanceIdsStr))");
+    $DBLIB->where("(assetTypes.instances_id IS NULL AND assetTypes.assetTypes_currency = '" . $AUTH->data['instance']['instances_config_currency'] . "' OR assetTypes.instances_id IN ($instanceIdsStr))");
 } else {
-    $DBLIB->where("(assetTypes.instances_id IS NULL OR assetTypes.instances_id = ?)", [$SEARCH['INSTANCE_ID']]);
+    $DBLIB->where("(assetTypes.instances_id IS NULL AND assetTypes.assetTypes_currency = '" . $SEARCH['INSTANCE']['instances_config_currency'] . "' OR assetTypes.instances_id = ?)", [$SEARCH['INSTANCE_ID']]);
 }
 $assets = $DBLIB->arraybuilder()->paginate('assetTypes', $SEARCH["PAGE"], ["assetTypes.*", "manufacturers.*", "assetCategories.*", "assetCategoriesGroups_name"]);
 $RETURN['PAGINATION']['TOTAL-PAGES'] = $DBLIB->totalPages;

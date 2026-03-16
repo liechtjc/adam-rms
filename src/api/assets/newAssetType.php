@@ -13,6 +13,7 @@ if (strlen($array['assetTypes_name']) <1) finish(false, ["code" => "PARAM-ERROR"
 
 $array['instances_id'] = $AUTH->data['instance']["instances_id"];
 $array['assetTypes_inserted'] = date('Y-m-d H:i:s');
+$array['assetTypes_currency'] = $AUTH->data['instance']['instances_config_currency'];
 
 $array['assetTypes_definableFields'] = array();
 $array['assetTypes_definableFields'][0] = $array['asset_definableFields_1'];
@@ -35,7 +36,7 @@ $array['assetTypes_value'] = $moneyParser->parse(($array['assetTypes_value'] ?? 
 $array['assetTypes_dayRate'] = $moneyParser->parse(($array['assetTypes_dayRate'] ?? '0.00'), $AUTH->data['instance']['instances_config_currency'])->getAmount();
 $array['assetTypes_weekRate'] = $moneyParser->parse(($array['assetTypes_weekRate'] ?? '0.00'), $AUTH->data['instance']['instances_config_currency'])->getAmount();
 
-$result = $DBLIB->insert("assetTypes", array_intersect_key( $array, array_flip( ['assetTypes_name','assetTypes_productLink','assetCategories_id','manufacturers_id','assetTypes_description','assetTypes_definableFields','assetTypes_mass','assetTypes_inserted',"instances_id","assetTypes_dayRate","assetTypes_weekRate","assetTypes_value"] ) ));
+$result = $DBLIB->insert("assetTypes", array_intersect_key( $array, array_flip( ['assetTypes_name','assetTypes_productLink','assetCategories_id','manufacturers_id','assetTypes_description','assetTypes_definableFields','assetTypes_mass','assetTypes_inserted','assetTypes_currency',"instances_id","assetTypes_dayRate","assetTypes_weekRate","assetTypes_value"] ) ));
 if (!$result) finish(false, ["code" => "INSERT-FAIL", "message"=> "Could not insert asset type"]);
 else finish(true, null, ["assetTypes_id" => $result]);
 

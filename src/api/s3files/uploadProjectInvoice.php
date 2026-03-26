@@ -60,7 +60,6 @@ if (isset($_FILES['file'])) {
             "instances_id" => $AUTH->data['instance']['instances_id']
         ];
         $id = $DBLIB->insert("s3files", $fileData);
-        echo $DBLIB->getLastError();
         if (!$id) finish(false, ["code" => null, "message" => "Error"]);
         else finish(true, null, ["id" => $id, "resize" => false, "url" => $CONFIG['ROOTURL'] . '/api/file/?r=true&f=' . $id]);
     } else finish(false, ["code" => null, "message" => "S3 Upload Error"]);

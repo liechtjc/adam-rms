@@ -38,11 +38,15 @@ if (isset($_FILES['file'])) {
     }
 
     $filename = sprintf("%s-", $filenamePrefix) . time() . "-" . (floor(rand())) . "." . "pdf";
-    $result = $s3->putObject([
-        'Bucket' => $CONFIGCLASS->get('AWS_S3_BUCKET'),
-        'Key'    => $s3Path . "/" . $filename,
-        'SourceFile' => $temp_file_location
-    ]);
+    try {
+        $result = $s3->putObject([
+            'Bucket' => $CONFIGCLASS->get('AWS_S3_BUCKET'),
+            'Key'    => $s3Path . "/" . $filename,
+            'SourceFile' => $temp_file_location
+        ]);
+    } catch (Exception $e) {
+        finish(false, ["code" => null, "message" => "S3 Upload Error"]);
+    }
     $code = $result['@metadata']['statusCode'];
     $uri = $result['@metadata']['effectiveUri'];
     if ($code === 200) {

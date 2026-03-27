@@ -9,61 +9,90 @@
             content: [
                 {% if INSTANCELOGO %}
                 {
-                    image: "{{ INSTANCELOGO|escape("js") }}",
-                    width: 200,
-                    margin: [157, 0, 0, 20]
+                    columns: [
+                        {
+                            stack: [
+                                {
+                                    image: "{{ INSTANCELOGO|escape("js") }}",
+                                    fit: [250, 80]
+                                }
+                            ],
+                            width: 'auto'
+                        },
+                        {
+                            stack: [
+                                { text: "{{ USERDATA['instance']['instances_name']|escape("js") }}", bold: true, fontSize: 10, color: '#595959' },
+                                {% if GET['addresses'] %}
+                                    { text: "{{ USERDATA.instance.instances_address|escape("js") }}", fontSize: 8, color: '#595959' },
+                                    { text: " ", fontSize: 4 },
+                                    { text: "{{ USERDATA.instance.instances_email|escape("js") }}", fontSize: 8, color: '#595959' },
+                                    { text: "{{ USERDATA.instance.instances_website|escape("js") }}", fontSize: 8, color: '#595959' },
+                                    { text: " ", fontSize: 4 },
+                                    { text: "{{ USERDATA.instance.instances_phone|escape("js") }}", fontSize: 8, color: '#595959' },
+                                {% endif %}
+                            ],
+                            alignment: "right",
+                            width: "*",
+                            margin: [0, 12, 0, 0]
+                        }
+                    ],
+                    margin: [0, 0, 0, 20]
+                },
+                {% else %}
+                {
+                    stack: [
+                        { text: "{{ USERDATA['instance']['instances_name']|escape("js") }}", bold: true, fontSize: 10, color: '#595959' },
+                        {% if GET['addresses'] %}
+                            { text: "{{ USERDATA.instance.instances_address|escape("js") }}", fontSize: 8, color: '#595959' },
+                            { text: " ", fontSize: 4 },
+                            { text: "{{ USERDATA.instance.instances_email|escape("js") }}", fontSize: 8, color: '#595959' },
+                            { text: "{{ USERDATA.instance.instances_website|escape("js") }}", fontSize: 8, color: '#595959' },
+                            { text: " ", fontSize: 4 },
+                            { text: "{{ USERDATA.instance.instances_phone|escape("js") }}", fontSize: 8, color: '#595959' },
+                        {% endif %}
+                    ],
+                    alignment: "right",
+                    margin: [0, 0, 0, 20]
                 },
                 {% endif %}
                 {
                     columns: [
                         {
                             stack: [
-                                {% if project.projectsTypes_config_client == 1 %}
-                                    {
-                                        text: "{{ project.clients_name|escape("js") }}",
-                                        style: { bold: true}
-                                    },
-                                    {% if GET['addresses'] %}
-                                        "{{ project.clients_address|escape("js") }}",
-                                        " ",
-                                        "{{ project.clients_website|escape("js") }}",
-                                        "{{ project.clients_email|escape("js") }}",
-                                        "{{ project.clients_phone|escape("js") }}"
-                                    {% endif %}
+                                { text: "{{ project.projects_name|escape("js") }}", bold: true, fontSize: 23 },
+                                { text: "{{ GET['fileType']}}", fontSize: 14 },
+                                {% if fileNumber %}
+                                    { text: "v{{ fileNumber|escape("js") }}" },
+                                {% endif %}
+                                {% if GET['pmdetails'] %}
+                                    { text: "{{ project.users_name1|escape("js") ~ " " ~ project.users_name2|escape("js") }}", bold: true },
+                                    { text: "{{ project.users_email|escape("js") }}" },
                                 {% endif %}
                             ],
-                            width: "50%"
+                            width: "*"
                         },
+                        {% if project.projectsTypes_config_client == 1 %}
                         {
                             stack: [
-                                {
-                                    text: "{{ USERDATA['instance']['instances_name']|escape("js") }}",
-                                    style: { bold: true}
-                                },
+                                { text: "{{ project.clients_name|escape("js") }}", bold: true },
                                 {% if GET['addresses'] %}
-                                    "{{ USERDATA.instance.instances_address|escape("js") }}",
+                                    "{{ project.clients_address|escape("js") }}",
                                     " ",
-                                    "{{ USERDATA.instance.instances_website|escape("js") }}",
-                                    "{{ USERDATA.instance.instances_phone|escape("js") }}",
-                                    "{{ USERDATA.instance.instances_email|escape("js") }}",
+                                    "{{ project.clients_website|escape("js") }}",
+                                    "{{ project.clients_email|escape("js") }}",
+                                    "{{ project.clients_phone|escape("js") }}"
                                 {% endif %}
                             ],
-                            style: { alignment: "right" },
-                            width: "50%"
+                            alignment: "right",
+                            width: "*"
                         }
+                        {% else %}
+                        { text: "", width: "*" }
+                        {% endif %}
                     ],
+                    margin: [0, 10, 0, 10]
                 },
                 " ",
-                {% if GET['pmdetails'] %}
-                    { text: "{{ project.users_name1|escape("js") ~ " " ~ project.users_name2|escape("js")  }}", style: { bold: true, alignment: "right" } },
-                    {text: "{{ project.users_email|escape("js") }}", style: { alignment: "right" } },
-                {% endif %}
-                {% if fileNumber %}
-                    {text: "v{{ fileNumber|escape("js") }}", style: { alignment: "right" } },
-                {% endif %}
-                " ",
-                { text: "{{ project.projects_name|escape("js") }}", style: { bold: true, fontSize: 25 } },
-                { text: "{{ GET['fileType']}}", style: { fontSize: 16 } },
                 {
                     table: {
                         widths: [ "50%", "50%"],
@@ -112,6 +141,86 @@
                     layout: 'noBorders',
                     margin: [ 0, 10, 0, 10 ]
                 },
+                {% if project.projects_invoiceNotes|length > 0 and GET['invoiceNotes'] %}
+                    { text: "Notes", style: { fontSize: 18, bold: true } },
+                    "{{ project.projects_invoiceNotes|escape("js") }}",
+                {% endif %}
+                {% if project.projects_deliveryNotes|length > 0 and GET['type'] == 'deliveryNote' %}
+                    { text: "Delivery Notes", style: { fontSize: 18, bold: true }, margin: [ 0, 20, 0, 0 ] },
+                    "{{ project.projects_deliveryNotes|escape("js") }}",
+                {% endif %}
+                {% if GET['assets'] and project.projectsTypes_config_assets == 1 %}
+                    { text: "Equipment", style: { fontSize: 18, bold: true } },
+                    
+                    {% set columnCount = 2 %}
+                    {% if GET['checkboxes'] %}{% set columnCount = columnCount + 1 %}{% endif %}
+                    {% if GET['comments'] %}{% set columnCount = columnCount + 1 %}{% endif %}
+                    {% if GET['masses'] %}{% set columnCount = columnCount + 1 %}{% endif %}
+                    {% if project.projectsTypes_config_finance == 1 %}
+                        {% if GET['prices'] %}{% set columnCount = columnCount + 1 %}{% endif %}
+                        {% if GET['discounts'] %}{% set columnCount = columnCount + 1 %}{% endif %}
+                    {% endif %}
+
+                    {% set allAssets = FINANCIALS.assetsAssigned %}
+                    {% for instance in FINANCIALS.assetsAssignedSUB %}
+                        {% set allAssets = allAssets|merge(instance['assets']) %}
+                    {% endfor %}
+                    {% set allAssets = allAssets|sort((a, b) => a['assets'][0].assetCategories_name <=> b['assets'][0].assetCategories_name) %}
+
+                    {% if allAssets|length > 0 %}
+                        {
+                            table: {
+                                headerRows: 1,
+                                widths: [
+                                    {% if GET['checkboxes'] %}'auto',{% endif %}
+                                    '*',
+                                    {% if GET['comments'] %}'auto',{% endif %}
+                                    'auto',
+                                    {% if GET['masses'] %}'auto',{% endif %}
+                                    {% if project.projectsTypes_config_finance == 1 %}
+                                        {% if GET['prices'] %}'auto',{% endif %}
+                                        {% if GET['discounts'] %}'auto',{% endif %}
+                                    {% endif %}
+                                ],
+                                body: [
+                                    [
+                                        {% if GET['checkboxes'] %}' ',{% endif %}
+                                        'Item',
+                                        {% if GET['comments'] %}' ',{% endif %}
+                                        '{# Definable Fields #} ',
+                                        {% if GET['masses'] %}'Mass',{% endif %}
+                                        {% if project.projectsTypes_config_finance == 1 %}
+                                            {% if GET['prices'] %}'Price {{ moneySymbol() }}',{% endif %}
+                                            {% if GET['discounts'] %}'Disc {{ moneySymbol() }}',{% endif %}
+                                        {% endif %}
+                                    ],
+                                {% set currentCategory = "" %}
+                                {% for type in allAssets %}
+                                    {% if type['assets'][0].assetCategories_name != currentCategory %}
+                                        {% set currentCategory = type['assets'][0].assetCategories_name %}
+                                        {% set currentCategoryID = type['assets'][0].assetCategories_id %}
+                                        [{
+                                            text: "{{ type['assets'][0].assetCategories_name|escape("js") }}",
+                                            style: { bold: true },
+                                            fillColor: '#F5F5F5',
+                                            colSpan: {{ columnCount }},
+                                            margin: 3
+                                        },
+                                        {% for i in range(2, columnCount) %}{},{% endfor %}
+                                    ],
+                                    {% endif %}
+                                    {% embed 'project/twigIncludes/assetList/tableItemPDF.twig' with {"type": type, "all": allAssets, "categoryid": currentCategoryID, "instanceid": USERDATA.instance.instances_id} %}{% endembed %}
+                                {% endfor %}
+                                ],
+                            },
+                            layout: 'lightHorizontalLines',
+                            margin: [ 0, 10, 0, 10 ]
+                        },
+                    {% endif %}
+                    {% if GET['flagsBlocks'] %}{ text: "[F] indicates asset flagged, [B] indicates asset blocked" },{% endif %}
+                    { text: "[L] indicates asset linked to another" },
+                    { text: "{{ allAssets|length }} Total Item{{ allAssets|length != 1 ? 's' }}", style: { fontSize: 14, bold: true, alignment: 'right' } },
+                {% endif %}
                 {% if GET['finance'] and "PROJECTS:PROJECT_PAYMENTS:VIEW"|instancePermissions and project.projectsTypes_config_finance == 1 %}
                 {
                     table: {
@@ -160,133 +269,8 @@
                     layout: 'noBorders',
                 },
                 {% endif %}
-                {% if project.projects_invoiceNotes|length > 0 and GET['invoiceNotes'] %}
-                    { text: "Notes", style: { fontSize: 20, bold: true } },
-                    "{{ project.projects_invoiceNotes|escape("js") }}",
-                {% endif %}
-                {% if project.projects_deliveryNotes|length > 0 and GET['type'] == 'deliveryNote' %}
-                    { text: "Delivery Notes", style: { fontSize: 20, bold: true }, margin: [ 0, 20, 0, 0 ] },
-                    "{{ project.projects_deliveryNotes|escape("js") }}",
-                {% endif %}
-                {% if GET['assets'] and project.projectsTypes_config_assets == 1 %}
-                    { text: "Equipment", style: { fontSize: 20, bold: true }, pageBreak: 'before' },
-                    
-                    {% set columnCount = 2 %}
-                    {% if GET['checkboxes'] %}{% set columnCount = columnCount + 1 %}{% endif %}
-                    {% if GET['comments'] %}{% set columnCount = columnCount + 1 %}{% endif %}
-                    {% if GET['masses'] %}{% set columnCount = columnCount + 1 %}{% endif %}
-                    {% if project.projectsTypes_config_finance == 1 %}
-                        {% if GET['prices'] %}{% set columnCount = columnCount + 1 %}{% endif %}
-                        {% if GET['discounts'] %}{% set columnCount = columnCount + 1 %}{% endif %}
-                    {% endif %}
-
-                    {% if FINANCIALS.assetsAssigned|length > 0 %}
-                        { 
-                            table: {
-                                headerRows: 1,
-                                widths: [
-                                    {% if GET['checkboxes'] %}'auto',{% endif %}
-                                    '*',
-                                    {% if GET['comments'] %}'auto',{% endif %}
-                                    'auto',
-                                    {% if GET['masses'] %}'auto',{% endif %}
-                                    {% if project.projectsTypes_config_finance == 1 %}
-                                        {% if GET['prices'] %}'auto',{% endif %}
-                                        {% if GET['discounts'] %}'auto',{% endif %}
-                                    {% endif %}
-                                ],
-                                body: [
-                                    [
-                                        {% if GET['checkboxes'] %}' ',{% endif %}
-                                        'Item',
-                                        {% if GET['comments'] %}' ',{% endif %}
-                                        '{# Definable Fields #} ',
-                                        {% if GET['masses'] %}'Mass',{% endif %}
-                                        {% if project.projectsTypes_config_finance == 1 %}
-                                            {% if GET['prices'] %}'Price {{ moneySymbol() }}',{% endif %}
-                                            {% if GET['discounts'] %}'Disc {{ moneySymbol() }}',{% endif %}
-                                        {% endif %}
-                                    ],
-                                {% set currentCategory = "" %}
-                                {% for type in FINANCIALS.assetsAssigned %}
-                                    {% if type['assets'][0].assetCategories_name != currentCategory %}
-                                        {% set currentCategory = type['assets'][0].assetCategories_name %}
-                                        {% set currentCategoryID = type['assets'][0].assetCategories_id %}
-                                        [{ 
-                                            text: "{{ type['assets'][0].assetCategories_name|escape("js") }}", 
-                                            style: { bold: true },
-                                            fillColor: '#F5F5F5',
-                                            colSpan: {{ columnCount }},
-                                            margin: 3
-                                        },
-                                        {% for i in range(2, columnCount) %}{},{% endfor %}
-                                    ],
-                                    {% endif %}
-                                    {% embed 'project/twigIncludes/assetList/tableItemPDF.twig' with {"type": type,"all": FINANCIALS.assetsAssigned, "categoryid":currentCategoryID,"instanceid": USERDATA.instance.instances_id} %}{% endembed %}
-                                {% endfor %}
-                                ],
-                            },
-                            layout: 'lightHorizontalLines',
-                            margin: [ 0, 10, 0, 10 ]
-                        },
-                    {% endif %}
-                    {% if FINANCIALS.assetsAssignedSUB|length > 0 %}{% for instance in FINANCIALS.assetsAssignedSUB %}
-                        { text: "{{ instance['instance']['instances_name']|escape("js") }} Equipment", style: { fontSize: 20, bold: true }, pageBreak: 'before' },
-                        { 
-                            table: {
-                                headerRows: 1,
-                                widths: [
-                                    {% if GET['checkboxes'] %}'auto',{% endif %}
-                                    '*',
-                                    {% if GET['comments'] %}'auto',{% endif %}
-                                    'auto',
-                                    {% if GET['masses'] %}'auto',{% endif %}
-                                    {% if project.projectsTypes_config_finance == 1 %}
-                                        {% if GET['prices'] %}'auto',{% endif %}
-                                        {% if GET['discounts'] %}'auto',{% endif %}
-                                    {% endif %}
-                                ],
-                                body: [
-                                    [
-                                        {% if GET['checkboxes'] %}' ',{% endif %}
-                                        'Item',
-                                        {% if GET['comments'] %}' ',{% endif %}
-                                        '{# Definable Fields #} ',
-                                        {% if GET['masses'] %}'Mass',{% endif %}
-                                        {% if project.projectsTypes_config_finance == 1 %}
-                                            {% if GET['prices'] %}'Price {{ moneySymbol() }}',{% endif %}
-                                            {% if GET['discounts'] %}'Disc {{ moneySymbol() }}',{% endif %}
-                                        {% endif %}
-                                    ],
-                                {% set currentCategory = "" %}
-                                {% for type in instance['assets'] %}
-                                    {% if type['assets'][0].assetCategories_name != currentCategory %}
-                                        {% set currentCategory = type['assets'][0].assetCategories_name %}
-                                        {% set currentCategoryID = type['assets'][0].assetCategories_id %}
-                                        [{ 
-                                            text: "{{ type['assets'][0].assetCategories_name|escape("js") }}", 
-                                            style: { bold: true },
-                                            fillColor: '#F5F5F5',
-                                            colSpan: {{ columnCount }},
-                                            margin: 3
-                                        },
-                                        {% for i in range(2, columnCount) %}{},{% endfor %}
-                                    ],
-                                    {% endif %}
-                                    {% embed 'project/twigIncludes/assetList/tableItemPDF.twig' with {"type": type,"all": instance, "categoryid":currentCategoryID,"instanceid": instance['instance'].instances_id} %}{% endembed %}
-                                {% endfor %}
-                                ],
-                            },
-                            layout: 'lightHorizontalLines',
-                            margin: [ 0, 10, 0, 10 ]
-                        },
-                    {% endfor %}{% endif %}
-                    {% if GET['flagsBlocks'] %}{ text: "[F] indicates asset flagged, [B] indicates asset blocked" },{% endif %}
-                    { text: "[L] indicates asset linked to another" },
-                    { text: "{{ (FINANCIALS.assetsAssigned|length + FINANCIALS.assetsAssignedSUB|length) }} Total Item{{ (FINANCIALS.assetsAssigned|length + FINANCIALS.assetsAssignedSUB|length) != 1 ? 's' }}", style: { fontSize: 16, bold: true, alignment: 'right' } },
-                {% endif %}
                 {% if FINANCIALS.payments.subHire.ledger|length > 0 and project.projectsTypes_config_finance == 1 and GET['subHires']  %}
-                    { text: "Additional Hire Items", style: { fontSize: 20, bold: true }, pageBreak: 'before' },
+                    { text: "Additional Hire Items", style: { fontSize: 18, bold: true }, pageBreak: 'before' },
                     { 
                         table: {
                             widths: ['auto', '*'{% if GET['prices'] %},'auto','auto'{% endif %}],
@@ -344,7 +328,7 @@
                     {% endif %}
                 {% endif %}
                 {% if FINANCIALS.payments.sales.ledger|length > 0 and project.projectsTypes_config_finance == 1 and GET['sales'] %}
-                    { text: "Sales", style: { fontSize: 20, bold: true } },
+                    { text: "Sales", style: { fontSize: 18, bold: true } },
                     { 
                         table: {
                             widths: ['auto', '*'{% if GET['prices'] %},'auto','auto'{% endif %}],
@@ -402,7 +386,7 @@
                     {% endif %}
                 {% endif %}
                 {% if project.projectsTypes_config_finance == 1 and FINANCIALS.payments.staff.ledger|length > 0 and GET['staff'] %}
-                    { text: "Staff", style: { fontSize: 20, bold: true } },
+                    { text: "Staff", style: { fontSize: 18, bold: true } },
                     { 
                         table: {
                             widths: ['auto', '*'{% if GET['prices'] %},'auto','auto'{% endif %}],
@@ -495,9 +479,10 @@
                 }; 
             },
             {% if GET['draft'] %}watermark: { text: 'DRAFT', opacity: 0.2, bold: true, italics: false },{% endif %}
+            defaultStyle: { fontSize: 10 },
             pageSize: 'A4',
             pageOrientation: 'portrait',
-            pageMargins: [ 40, 40, 40, 40 ],
+            pageMargins: [ 50, 25, 50, 40 ],
             info: {
                 title: "{% if project.projectsTypes_config_client == 1 and project['clients_name'] %}{{  project['clients_name']|escape("js") }} - {% endif %}{{ project['projects_name']|escape("js") }}",
                 author: "{{ USERDATA['instance']['instances_name']|escape("js") }}",

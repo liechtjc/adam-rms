@@ -31,18 +31,18 @@
         style: { bold: true }
     },
     {% if GET['masses'] %}
-        '{{ type['totals']['mass'] > 0 ? type['totals']['mass']|escape("js") ~ "kg" : "" }}',
+        { text: '{{ type['totals']['mass'] > 0 ? type['totals']['mass']|number_format(2, ".", "")|escape("js") : "" }}', style: { alignment: 'right' } },
     {% endif %}
     {% if project.projectsTypes_config_finance == 1 %}
         {% if firstAsset.assetsAssignments_customPrice %}
             { text: '' }, { text: '' }, { text: '' }, { text: '' },
-            { text: "{{ type['totals']['discountPrice']|money|escape("js") }}", style: { alignment: 'right' } },
+            { text: "{{ (type['totals']['discountPrice'].amount / 100)|number_format(2, '.', '')|escape("js") }}", style: { alignment: 'right' } },
         {% else %}
-            { text: "{{ moneySymbol() }}\u00A0{{ (summaryRate / 100)|number_format(2, '.', '')|escape("js") }}", style: { alignment: 'right' } },
+            { text: "{{ (summaryRate / 100)|number_format(2, '.', '')|escape("js") }}", style: { alignment: 'right' } },
             { text: "{{ coeffDisplay|escape("js") }}", style: { alignment: 'right' } },
-            { text: "{{ type['totals']['price']|money|escape("js") }}", style: { alignment: 'right' } },
+            { text: "{{ (type['totals']['price'].amount / 100)|number_format(2, '.', '')|escape("js") }}", style: { alignment: 'right' } },
             { text: '' },
-            { text: "{{ type['totals']['discountPrice']|money|escape("js") }}", style: { alignment: 'right' } },
+            { text: "{{ (type['totals']['discountPrice'].amount / 100)|number_format(2, '.', '')|escape("js") }}", style: { alignment: 'right' } },
         {% endif %}
     {% endif %}
 ],
@@ -93,20 +93,20 @@
         },
     {% endif %}
     {% if GET['masses'] %}
-        '{{ assetAssignment.assets_mass is not null ? assetAssignment.assets_mass|mass : (assetAssignment.assetTypes_mass is not null and assetAssignment.assetTypes_mass != 0 ? assetAssignment.assetTypes_mass|mass : "") }}',
+        { text: '{{ assetAssignment.assets_mass is not null ? assetAssignment.assets_mass|number_format(2, ".", "") : (assetAssignment.assetTypes_mass is not null and assetAssignment.assetTypes_mass != 0 ? assetAssignment.assetTypes_mass|number_format(2, ".", "") : "") }}', style: { alignment: 'right' } },
     {% endif %}
     {% if project.projectsTypes_config_finance == 1 %}
         {% if isLinked %}
             { text: '', colSpan: 5 }, {}, {}, {}, {},
         {% elseif assetAssignment.assetsAssignments_customPrice %}
             { text: '' }, { text: '' }, { text: '' }, { text: '' },
-            { text: "{{ assetAssignment.price|money|escape("js") }}", style: { alignment: 'right' } },
+            { text: "{{ (assetAssignment.price.amount / 100)|number_format(2, '.', '')|escape("js") }}", style: { alignment: 'right' } },
         {% else %}
-            { text: "{{ moneySymbol() }}\u00A0{{ (effRate / 100)|number_format(2, '.', '')|escape("js") }}", style: { alignment: 'right' } },
+            { text: "{{ (effRate / 100)|number_format(2, '.', '')|escape("js") }}", style: { alignment: 'right' } },
             { text: "{{ coeffDisplay|escape("js") }}", style: { alignment: 'right' } },
-            { text: "{{ assetAssignment.price|money|escape("js") }}", style: { alignment: 'right' } },
+            { text: "{{ (assetAssignment.price.amount / 100)|number_format(2, '.', '')|escape("js") }}", style: { alignment: 'right' } },
             { text: "{{ discDisplay|escape("js") }}", style: { alignment: 'right' } },
-            { text: "{{ assetAssignment.discountPrice|money|escape("js") }}", style: { alignment: 'right' } },
+            { text: "{{ (assetAssignment.discountPrice.amount / 100)|number_format(2, '.', '')|escape("js") }}", style: { alignment: 'right' } },
         {% endif %}
     {% endif %}
 ],

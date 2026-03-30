@@ -157,11 +157,11 @@
 
                     {#
                         pdfmake treats widths as CONTENT widths; padding is added on top.
-                        Layout uses 2pt each side = 4pt overhead per column.
+                        Custom layout below uses 2pt each side = 4pt overhead per column.
                         Total rendered = sum(widths) + columnCount * 4
                         To fit 495pt: sum(widths) = 495 - columnCount * 4
                         Each fixed width = desired_visual_width - 4.
-                        Target visuals: cb=20, id=30, mass=31, base=62, coeff=24, calc=62, disc=15, final=62
+                        Target visuals: cb=20, id=30, mass=31, base=46, coeff=26, calc=46, disc=26, final=46
                     #}
                     {% set itemW = 495 - columnCount * 4 %}
                     {% if GET['checkboxes'] %}{% set itemW = itemW - 16 %}{% endif %}
@@ -221,7 +221,19 @@
                                 {% endfor %}
                                 ],
                             },
-                            layout: 'lightHorizontalLines',
+                            layout: {
+                                hLineWidth: function(i, node) {
+                                    if (i === 0 || i === node.table.body.length) return 0;
+                                    if (i === 1) return 1;
+                                    return 0.5;
+                                },
+                                vLineWidth: function() { return 0; },
+                                hLineColor: function(i) { return i === 1 ? 'black' : '#aaaaaa'; },
+                                paddingLeft: function() { return 2; },
+                                paddingRight: function() { return 2; },
+                                paddingTop: function() { return 2; },
+                                paddingBottom: function() { return 2; }
+                            },
                             margin: [ 0, 10, 0, 10 ]
                         },
                     {% endif %}
@@ -451,12 +463,12 @@
                     },
                     {% endif %}
                 {% endif %}
-                {% if GET['paymentTerms'] and GET['type'] != 'deliveryNote'  %}
+                {% if GET['paymentTerms'] %}
                 {
                     table: {
                         widths: [ "100%"],
                         body: [[
-                            { text: "{{ GET['type'] == 'quote' ? USERDATA.instance.instances_quoteTerms|striptags|escape("js") : USERDATA.instance.instances_termsAndPayment|replace({"</p>":"\n", "<br/>":"\n"})|striptags|escape("js") }}", margin: 5 }
+                            { text: "{% if GET['type'] == 'quote' %}{{ USERDATA.instance.instances_quoteTerms|striptags|escape("js") }}{% elseif GET['type'] == 'deliveryNote' %}{{ USERDATA.instance.instances_deliveryNoteTerms|replace({"</p>":"\n", "<br/>":"\n"})|striptags|escape("js") }}{% else %}{{ USERDATA.instance.instances_termsAndPayment|replace({"</p>":"\n", "<br/>":"\n"})|striptags|escape("js") }}{% endif %}", margin: 5 }
                         ]],
                     },
                     fillColor: '#F5F5F5',

@@ -36,6 +36,10 @@
                         <label for="instances_termsAndPayment">Invoice Footer</label>
                         <textarea class="form-control" id="instances_termsAndPayment" placeholder="Place some text here" style="width: 100%; height: 200px; font-size: 14px; line-height: 18px; border: 1px solid #dddddd; padding: 10px;">{{ USERDATA.instance.instances_termsAndPayment }}</textarea>
                     </div>
+                    <div class="form-group">
+                        <label for="instances_deliveryNoteTerms">Delivery Note Footer</label>
+                        <textarea class="form-control" id="instances_deliveryNoteTerms" placeholder="Place some text here" style="width: 100%; height: 200px; font-size: 14px; line-height: 18px; border: 1px solid #dddddd; padding: 10px;">{{ USERDATA.instance.instances_deliveryNoteTerms }}</textarea>
+                    </div>
                 </div>
                 <div class="card-footer">
                     {% if "BUSINESS:BUSINESS_SETTINGS:EDIT"|instancePermissions %}
@@ -49,7 +53,8 @@
                         ajaxcall("instances/editInstance.php", {
                             'formData': [
                                 { 'name': 'instances_termsAndPayment','value':$('#instances_termsAndPayment').val() },
-                                { 'name': 'instances_quoteTerms','value':$('#instances_quoteTerms').val() }
+                                { 'name': 'instances_quoteTerms','value':$('#instances_quoteTerms').val() },
+                                { 'name': 'instances_deliveryNoteTerms','value':$('#instances_deliveryNoteTerms').val() }
                             ]
                         }, function (data) {
                             location.reload();

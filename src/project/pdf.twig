@@ -154,12 +154,8 @@
                     
                     {% set columnCount = 2 %}
                     {% if GET['checkboxes'] %}{% set columnCount = columnCount + 1 %}{% endif %}
-                    {% if GET['comments'] %}{% set columnCount = columnCount + 1 %}{% endif %}
                     {% if GET['masses'] %}{% set columnCount = columnCount + 1 %}{% endif %}
-                    {% if project.projectsTypes_config_finance == 1 %}
-                        {% if GET['prices'] %}{% set columnCount = columnCount + 1 %}{% endif %}
-                        {% if GET['discounts'] %}{% set columnCount = columnCount + 1 %}{% endif %}
-                    {% endif %}
+                    {% if project.projectsTypes_config_finance == 1 %}{% set columnCount = columnCount + 5 %}{% endif %}
 
                     {% set allAssets = FINANCIALS.assetsAssigned %}
                     {% for instance in FINANCIALS.assetsAssignedSUB %}
@@ -173,25 +169,25 @@
                                 headerRows: 1,
                                 widths: [
                                     {% if GET['checkboxes'] %}'auto',{% endif %}
+                                    34,
                                     '*',
-                                    {% if GET['comments'] %}'auto',{% endif %}
-                                    'auto',
-                                    {% if GET['masses'] %}'auto',{% endif %}
+                                    {% if GET['masses'] %}35,{% endif %}
                                     {% if project.projectsTypes_config_finance == 1 %}
-                                        {% if GET['prices'] %}'auto',{% endif %}
-                                        {% if GET['discounts'] %}'auto',{% endif %}
+                                        58, 28, 58, 18, 58,
                                     {% endif %}
                                 ],
                                 body: [
                                     [
-                                        {% if GET['checkboxes'] %}' ',{% endif %}
-                                        'Item',
-                                        {% if GET['comments'] %}' ',{% endif %}
-                                        '{# Definable Fields #} ',
-                                        {% if GET['masses'] %}'Mass',{% endif %}
+                                        {% if GET['checkboxes'] %}{ text: '' },{% endif %}
+                                        { text: 'ID', style: { bold: true } },
+                                        { text: 'Item', style: { bold: true } },
+                                        {% if GET['masses'] %}{ text: 'Mass', style: { bold: true, alignment: 'right' } },{% endif %}
                                         {% if project.projectsTypes_config_finance == 1 %}
-                                            {% if GET['prices'] %}'Price {{ moneySymbol() }}',{% endif %}
-                                            {% if GET['discounts'] %}'Disc {{ moneySymbol() }}',{% endif %}
+                                            { stack: [{ text: 'Base', bold: true }, { text: '{{ moneySymbol() }}' }], alignment: 'right' },
+                                            { text: 'Coeff', style: { bold: true, alignment: 'right' } },
+                                            { stack: [{ text: 'Calc', bold: true }, { text: '{{ moneySymbol() }}' }], alignment: 'right' },
+                                            { text: 'Disc', style: { bold: true, alignment: 'right' } },
+                                            { stack: [{ text: 'Final', bold: true }, { text: '{{ moneySymbol() }}' }], alignment: 'right' },
                                         {% endif %}
                                     ],
                                 {% set currentCategory = "" %}
@@ -479,7 +475,7 @@
                 }; 
             },
             {% if GET['draft'] %}watermark: { text: 'DRAFT', opacity: 0.2, bold: true, italics: false },{% endif %}
-            defaultStyle: { fontSize: 10 },
+            defaultStyle: { fontSize: 9 },
             pageSize: 'A4',
             pageOrientation: 'portrait',
             pageMargins: [ 50, 25, 50, 40 ],
@@ -491,6 +487,12 @@
             },
             compress: true,
         };
+        // DEBUG: log widths of all tables to identify narrow-column issue
+        docDefinition.content.forEach(function(item, i) {
+            if (item && item.table && item.table.widths) {
+                console.log('Table[' + i + '] widths:', JSON.stringify(item.table.widths));
+            }
+        });
         try {
             var pdf = pdfMake.createPdf(docDefinition);
             {% if GET['draft'] or CONFIG.FILES_ENABLED != "Enabled" or USERDATA.instance.instances_storageEnabled != 1 %}

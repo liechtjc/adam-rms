@@ -1,59 +1,114 @@
-{% if type['assets']|length > 1 %}{# If there's just one item then just display it on its own below, otherwise display just a header #}
+{# ── Coeff (project-level, same for all rows) ─────────────────────────── #}
+{% if FINANCIALS.priceMaths['days'] > 0 %}
+    {% set coeffVal = FINANCIALS.priceMaths['days'] %}
+    {% set coeffSuffix = 'd' %}
+{% else %}
+    {% set coeffVal = FINANCIALS.priceMaths['weeks'] %}
+    {% set coeffSuffix = 'w' %}
+{% endif %}
+{% set coeffFmt = coeffVal|number_format(2, '.', '') %}
+{% if coeffFmt ends with '.00' %}
+    {% set coeffDisplay = coeffVal|number_format(0, '.', '') ~ coeffSuffix %}
+{% elseif coeffFmt ends with '0' %}
+    {% set coeffDisplay = coeffVal|number_format(1, '.', '') ~ coeffSuffix %}
+{% else %}
+    {% set coeffDisplay = coeffFmt ~ coeffSuffix %}
+{% endif %}
+
+{# ── Type summary row (multiple assets of same type) ─────────────────── #}
+{% if type['assets']|length > 1 %}
+    {% set firstAsset = type['assets'][0] %}
+    {% if FINANCIALS.priceMaths['days'] > 0 %}
+        {% set summaryRate = firstAsset.assets_dayRate is not null ? firstAsset.assets_dayRate : firstAsset.assetTypes_dayRate %}
+    {% else %}
+        {% set summaryRate = firstAsset.assets_weekRate is not null ? firstAsset.assets_weekRate : firstAsset.assetTypes_weekRate %}
+    {% endif %}
 [
     {% if GET['checkboxes'] %}'[  ]',{% endif %}
-    { 
-        text: "{{ type['assets']|length }}x {{ type['assets'][0].manufacturers_id != 1 ? type['assets'][0].manufacturers_name|escape("js") ~ " - " : "" }}{{ type['assets'][0].assetTypes_name|escape("js") }}", 
-        style: { bold: true },
-        colSpan: {{ GET['comments'] ? 3 : 2 }}
+    '',
+    {
+        text: "{{ type['assets']|length }}x {{ firstAsset.manufacturers_id != 1 ? firstAsset.manufacturers_name|escape("js") ~ " - " : "" }}{{ firstAsset.assetTypes_name|escape("js") }}",
+        style: { bold: true }
     },
-    {% for i in range(2, GET['comments'] ? 3 : 2) %}{},{% endfor %}{# Quirk of pdfmake is that you have to follow any colspans that are followed by content with empty {} #}
     {% if GET['masses'] %}
-        '{{ (type['totals']['mass'] > 0 ? type['totals']['mass']|escape("js") ~ 'kg' : '') }}',
+        '{{ type['totals']['mass'] > 0 ? type['totals']['mass']|escape("js") ~ "kg" : "" }}',
     {% endif %}
     {% if project.projectsTypes_config_finance == 1 %}
-        {% if GET['prices'] %}
-            '{{ type['totals']['price']|money|escape("js") }}',
-        {% endif %}
-        {% if GET['discounts'] %}
-            '{{ type['totals']['discountPrice']|money|escape("js") }}',
+        {% if firstAsset.assetsAssignments_customPrice %}
+            { text: '' }, { text: '' }, { text: '' }, { text: '' },
+            { text: "{{ type['totals']['discountPrice']|money|escape("js") }}", style: { alignment: 'right' } },
+        {% else %}
+            { text: "{{ moneySymbol() }} {{ (summaryRate / 100)|number_format(2, '.', '')|escape("js") }}", style: { alignment: 'right' } },
+            { text: "{{ coeffDisplay|escape("js") }}", style: { alignment: 'right' } },
+            { text: "{{ type['totals']['price']|money|escape("js") }}", style: { alignment: 'right' } },
+            { text: '' },
+            { text: "{{ type['totals']['discountPrice']|money|escape("js") }}", style: { alignment: 'right' } },
         {% endif %}
     {% endif %}
 ],
 {% endif %}
+
+{# ── Individual asset rows ────────────────────────────────────────────── #}
 {% for assetAssignment in type['assets'] %}
     {% if type['assets']|length == 1 or GET['showAll'] %}
-    [
-        {% if GET['checkboxes'] %}'[  ]',{% endif %}
-        { 
-            text: "{% if type['assets']|length == 1 %}{{ assetAssignment.manufacturers_id != 1 ? assetAssignment.manufacturers_name|escape("js") ~ " - " : "" }}{{ assetAssignment.assetTypes_name|escape("js") }}{% else %}{% endif %}{% if GET['showAll'] %}{{ assetAssignment.assets_tag|aTag|escape("js") }}{% endif %} {% if GET['flagsBlocks'] %}{% for flag in assetAssignment.flagsblocks.FLAG %}[F]{% endfor %}{% for flag in assetAssignment.flagsblocks.BLOCK %}[B]{% endfor %}{% endif %}{% if assetAssignment.assetsAssignments_linkedTo %}[L]{% endif %}",
-            colSpan: {{ (assetAssignment.assetsAssignments_comment and GET['comments'] ? 1 : assetAssignment.assetTypes_definableFields_ARRAY|length > 0 ? (GET['comments'] ? 2 : 1) : (GET['comments'] ? 3 : 2)) }}
-        },
-        {{ (assetAssignment.assetsAssignments_comment and GET['comments'] ? '' : assetAssignment.assetTypes_definableFields_ARRAY|length > 0 ? (GET['comments'] ? '{},' : '') : (GET['comments'] ? '{},{},' : '{},')) }}
-        {% if assetAssignment.assetsAssignments_comment and GET['comments'] %}
-        {
-            text: "{{ assetAssignment.assetsAssignments_comment|escape("js") }}",
-            colSpan: {{ assetAssignment.assetTypes_definableFields_ARRAY|length > 0 ? '1' : '2' }}
-        },
-        {% if assetAssignment.assetTypes_definableFields_ARRAY|length < 1 %}{},{% endif %}
-        {% endif %}
-        {% if assetAssignment.assetTypes_definableFields_ARRAY|length > 0 %}
-        {
-          stack: [
-            {% for field in assetAssignment.assetTypes_definableFields|split(",") %}
-                {% if field != "" %}
-                    '{{ field|escape("js") }}: {{ assetAssignment['asset_definableFields_' ~ loop.index]|escape("js") }}',
+
+        {% set isLinked = assetAssignment.assetsAssignments_linkedTo %}
+
+        {# Effective rate (only needed for non-linked items) #}
+        {% if not isLinked %}
+            {% if FINANCIALS.priceMaths['days'] > 0 %}
+                {% set effRate = assetAssignment.assets_dayRate is not null ? assetAssignment.assets_dayRate : assetAssignment.assetTypes_dayRate %}
+            {% else %}
+                {% set effRate = assetAssignment.assets_weekRate is not null ? assetAssignment.assets_weekRate : assetAssignment.assetTypes_weekRate %}
+            {% endif %}
+
+            {# Discount display (no leading zeros, strip trailing zeros) #}
+            {% set disc = assetAssignment.assetsAssignments_discount %}
+            {% if disc != 0 %}
+                {% set discFmt = disc|number_format(2, '.', '') %}
+                {% if discFmt ends with '.00' %}
+                    {% set discDisplay = disc|number_format(0, '.', '') ~ '%' %}
+                {% elseif discFmt ends with '0' %}
+                    {% set discDisplay = disc|number_format(1, '.', '') ~ '%' %}
+                {% else %}
+                    {% set discDisplay = discFmt ~ '%' %}
                 {% endif %}
-            {% endfor %}
-          ],
+            {% else %}
+                {% set discDisplay = '' %}
+            {% endif %}
+        {% endif %}
+
+[
+    {% if GET['checkboxes'] %}'[  ]',{% endif %}
+    '{{ assetAssignment.assets_tag|aTag|escape("js") }}',
+    {% if isLinked %}
+        { text: "[L]{% if assetAssignment.manufacturers_id != 1 %} {{ assetAssignment.manufacturers_name|escape("js") }} -{% endif %} {{ assetAssignment.assetTypes_name|escape("js") }}{% if GET['flagsBlocks'] %}{% for flag in assetAssignment.flagsblocks.FLAG %} [F]{% endfor %}{% for flag in assetAssignment.flagsblocks.BLOCK %} [B]{% endfor %}{% endif %}", color: '#595959' },
+    {% else %}
+        {
+            stack: [
+                { text: "{% if type['assets']|length == 1 %}{{ assetAssignment.manufacturers_id != 1 ? assetAssignment.manufacturers_name|escape("js") ~ " - " : "" }}{{ assetAssignment.assetTypes_name|escape("js") }}{% endif %}{% if GET['flagsBlocks'] %}{% for flag in assetAssignment.flagsblocks.FLAG %} [F]{% endfor %}{% for flag in assetAssignment.flagsblocks.BLOCK %} [B]{% endfor %}{% endif %}" }{% if assetAssignment.assetsAssignments_comment %},
+                { text: "{{ assetAssignment.assetsAssignments_comment|escape("js") }}", color: '#595959', margin: [0, 2, 0, 0] }{% endif %}
+
+            ]
         },
+    {% endif %}
+    {% if GET['masses'] %}
+        '{{ assetAssignment.assets_mass is not null ? assetAssignment.assets_mass|mass : (assetAssignment.assetTypes_mass is not null and assetAssignment.assetTypes_mass != 0 ? assetAssignment.assetTypes_mass|mass : "") }}',
+    {% endif %}
+    {% if project.projectsTypes_config_finance == 1 %}
+        {% if isLinked %}
+            { text: '', colSpan: 5 }, {}, {}, {}, {},
+        {% elseif assetAssignment.assetsAssignments_customPrice %}
+            { text: '' }, { text: '' }, { text: '' }, { text: '' },
+            { text: "{{ assetAssignment.price|money|escape("js") }}", style: { alignment: 'right' } },
+        {% else %}
+            { text: "{{ moneySymbol() }} {{ (effRate / 100)|number_format(2, '.', '')|escape("js") }}", style: { alignment: 'right' } },
+            { text: "{{ coeffDisplay|escape("js") }}", style: { alignment: 'right' } },
+            { text: "{{ assetAssignment.price|money|escape("js") }}", style: { alignment: 'right' } },
+            { text: "{{ discDisplay|escape("js") }}", style: { alignment: 'right' } },
+            { text: "{{ assetAssignment.discountPrice|money|escape("js") }}", style: { alignment: 'right' } },
         {% endif %}
-        {% if GET['masses'] %}
-            '{{ assetAssignment.assets_mass != null ? assetAssignment.assets_mass|mass : (assetAssignment.assetTypes_mass != null and assetAssignment.assetTypes_mass != 0 ? assetAssignment.assetTypes_mass|mass : "") }}',
-        {% endif %}
-        {% if project.projectsTypes_config_finance == 1 %}
-            {% if GET['prices'] %}'{{ assetAssignment.price|money|escape("js") }}',{% endif %}
-            {% if GET['discounts'] %}'{{ assetAssignment.discountPrice|money|escape("js") }}',{% endif %}
-        {% endif %}
-    ],
+    {% endif %}
+],
     {% endif %}
 {% endfor %}

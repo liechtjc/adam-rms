@@ -161,13 +161,13 @@
                         Total rendered = sum(widths) + columnCount * 4
                         To fit 495pt: sum(widths) = 495 - columnCount * 4
                         Each fixed width = desired_visual_width - 4.
-                        Target visuals: cb=20, id=30, mass=31, base=62, coeff=24, calc=62, disc=15, final=62
+                        Target visuals: cb=20, id=30, mass=31, base=62, coeff=29, calc=62, disc=26, final=62
                     #}
                     {% set itemW = 495 - columnCount * 4 %}
                     {% if GET['checkboxes'] %}{% set itemW = itemW - 16 %}{% endif %}
                     {% set itemW = itemW - 30 %}
                     {% if GET['masses'] %}{% set itemW = itemW - 27 %}{% endif %}
-                    {% if project.projectsTypes_config_finance == 1 %}{% set itemW = itemW - 170 %}{% endif %}
+                    {% if project.projectsTypes_config_finance == 1 %}{% set itemW = itemW - 173 %}{% endif %}
 
                     {% set allAssets = FINANCIALS.assetsAssigned %}
                     {% for instance in FINANCIALS.assetsAssignedSUB %}
@@ -185,7 +185,7 @@
                                     {{ itemW }},
                                     {% if GET['masses'] %}27,{% endif %}
                                     {% if project.projectsTypes_config_finance == 1 %}
-                                        42, 22, 42, 22, 42,
+                                        42, 25, 42, 25, 42,
                                     {% endif %}
                                 ],
                                 body: [
@@ -221,7 +221,19 @@
                                 {% endfor %}
                                 ],
                             },
-                            layout: 'lightHorizontalLines',
+                            layout: {
+                                hLineWidth: function(i, node) {
+                                    if (i === 0 || i === node.table.body.length) return 0;
+                                    if (i === 1) return 1;
+                                    return 0.5;
+                                },
+                                vLineWidth: function() { return 0; },
+                                hLineColor: function(i) { return i === 1 ? 'black' : '#aaaaaa'; },
+                                paddingLeft: function() { return 2; },
+                                paddingRight: function() { return 2; },
+                                paddingTop: function() { return 2; },
+                                paddingBottom: function() { return 2; }
+                            },
                             margin: [ 0, 10, 0, 10 ]
                         },
                     {% endif %}

@@ -23,12 +23,12 @@
                             stack: [
                                 { text: "{{ USERDATA['instance']['instances_name']|escape("js") }}", bold: true, fontSize: 10, color: '#595959' },
                                 {% if GET['addresses'] %}
-                                    { text: "{{ USERDATA.instance.instances_address|escape("js") }}", fontSize: 8, color: '#595959' },
+                                    { text: "{{ USERDATA.instance.instances_address|escape("js") }}", fontSize: 9, color: '#595959' },
                                     { text: " ", fontSize: 4 },
-                                    { text: "{{ USERDATA.instance.instances_email|escape("js") }}", fontSize: 8, color: '#595959' },
-                                    { text: "{{ USERDATA.instance.instances_website|escape("js") }}", fontSize: 8, color: '#595959' },
+                                    { text: "{{ USERDATA.instance.instances_email|escape("js") }}", fontSize: 9, color: '#595959' },
+                                    { text: "{{ USERDATA.instance.instances_website|escape("js") }}", fontSize: 9, color: '#595959' },
                                     { text: " ", fontSize: 4 },
-                                    { text: "{{ USERDATA.instance.instances_phone|escape("js") }}", fontSize: 8, color: '#595959' },
+                                    { text: "{{ USERDATA.instance.instances_phone|escape("js") }}", fontSize: 9, color: '#595959' },
                                 {% endif %}
                             ],
                             alignment: "right",
@@ -43,12 +43,12 @@
                     stack: [
                         { text: "{{ USERDATA['instance']['instances_name']|escape("js") }}", bold: true, fontSize: 10, color: '#595959' },
                         {% if GET['addresses'] %}
-                            { text: "{{ USERDATA.instance.instances_address|escape("js") }}", fontSize: 8, color: '#595959' },
+                            { text: "{{ USERDATA.instance.instances_address|escape("js") }}", fontSize: 9, color: '#595959' },
                             { text: " ", fontSize: 4 },
-                            { text: "{{ USERDATA.instance.instances_email|escape("js") }}", fontSize: 8, color: '#595959' },
-                            { text: "{{ USERDATA.instance.instances_website|escape("js") }}", fontSize: 8, color: '#595959' },
+                            { text: "{{ USERDATA.instance.instances_email|escape("js") }}", fontSize: 9, color: '#595959' },
+                            { text: "{{ USERDATA.instance.instances_website|escape("js") }}", fontSize: 9, color: '#595959' },
                             { text: " ", fontSize: 4 },
-                            { text: "{{ USERDATA.instance.instances_phone|escape("js") }}", fontSize: 8, color: '#595959' },
+                            { text: "{{ USERDATA.instance.instances_phone|escape("js") }}", fontSize: 9, color: '#595959' },
                         {% endif %}
                     ],
                     alignment: "right",
@@ -157,6 +157,13 @@
                     {% if GET['masses'] %}{% set columnCount = columnCount + 1 %}{% endif %}
                     {% if project.projectsTypes_config_finance == 1 %}{% set columnCount = columnCount + 5 %}{% endif %}
 
+                    {# Explicit item column width: 495pt content area minus all fixed columns #}
+                    {% set itemW = 495 %}
+                    {% if GET['checkboxes'] %}{% set itemW = itemW - 24 %}{% endif %}
+                    {% set itemW = itemW - 34 %}
+                    {% if GET['masses'] %}{% set itemW = itemW - 35 %}{% endif %}
+                    {% if project.projectsTypes_config_finance == 1 %}{% set itemW = itemW - 256 %}{% endif %}
+
                     {% set allAssets = FINANCIALS.assetsAssigned %}
                     {% for instance in FINANCIALS.assetsAssignedSUB %}
                         {% set allAssets = allAssets|merge(instance['assets']) %}
@@ -168,12 +175,12 @@
                             table: {
                                 headerRows: 1,
                                 widths: [
-                                    {% if GET['checkboxes'] %}'auto',{% endif %}
+                                    {% if GET['checkboxes'] %}24,{% endif %}
                                     34,
-                                    '*',
+                                    {{ itemW }},
                                     {% if GET['masses'] %}35,{% endif %}
                                     {% if project.projectsTypes_config_finance == 1 %}
-                                        58, 28, 58, 18, 58,
+                                        70, 28, 70, 18, 70,
                                     {% endif %}
                                 ],
                                 body: [
@@ -487,12 +494,6 @@
             },
             compress: true,
         };
-        // DEBUG: log widths of all tables to identify narrow-column issue
-        docDefinition.content.forEach(function(item, i) {
-            if (item && item.table && item.table.widths) {
-                console.log('Table[' + i + '] widths:', JSON.stringify(item.table.widths));
-            }
-        });
         try {
             var pdf = pdfMake.createPdf(docDefinition);
             {% if GET['draft'] or CONFIG.FILES_ENABLED != "Enabled" or USERDATA.instance.instances_storageEnabled != 1 %}

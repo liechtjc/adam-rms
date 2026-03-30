@@ -157,7 +157,7 @@
 
                     {#
                         pdfmake treats widths as CONTENT widths; padding is added on top.
-                        Layout uses 2pt each side = 4pt overhead per column.
+                        Custom layout below uses 2pt each side = 4pt overhead per column.
                         Total rendered = sum(widths) + columnCount * 4
                         To fit 495pt: sum(widths) = 495 - columnCount * 4
                         Each fixed width = desired_visual_width - 4.
@@ -463,12 +463,12 @@
                     },
                     {% endif %}
                 {% endif %}
-                {% if GET['paymentTerms'] and GET['type'] != 'deliveryNote'  %}
+                {% if GET['paymentTerms'] %}
                 {
                     table: {
                         widths: [ "100%"],
                         body: [[
-                            { text: "{{ GET['type'] == 'quote' ? USERDATA.instance.instances_quoteTerms|striptags|escape("js") : USERDATA.instance.instances_termsAndPayment|replace({"</p>":"\n", "<br/>":"\n"})|striptags|escape("js") }}", margin: 5 }
+                            { text: "{% if GET['type'] == 'quote' %}{{ USERDATA.instance.instances_quoteTerms|striptags|escape("js") }}{% elseif GET['type'] == 'deliveryNote' %}{{ USERDATA.instance.instances_deliveryNoteTerms|replace({"</p>":"\n", "<br/>":"\n"})|striptags|escape("js") }}{% else %}{{ USERDATA.instance.instances_termsAndPayment|replace({"</p>":"\n", "<br/>":"\n"})|striptags|escape("js") }}{% endif %}", margin: 5 }
                         ]],
                     },
                     fillColor: '#F5F5F5',

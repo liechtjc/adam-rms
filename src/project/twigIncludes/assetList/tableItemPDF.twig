@@ -110,5 +110,21 @@
         {% endif %}
     {% endif %}
 ],
+        {# Linked children — rendered immediately below their parent, sorted by category #}
+        {% if linkedMap is defined and linkedMap[assetAssignment.assetsAssignments_id] is defined %}
+            {% for child in linkedMap[assetAssignment.assetsAssignments_id]|sort((a,b) => a.assetCategories_name <=> b.assetCategories_name) %}
+[
+    {% if GET['checkboxes'] %}'',{% endif %}
+    '{{ child.assets_tag|aTag|escape("js") }}',
+    { text: "[L]{% if child.manufacturers_id != 1 %} {{ child.manufacturers_name|escape("js") }} -{% endif %} {{ child.assetTypes_name|escape("js") }}{% if GET['flagsBlocks'] %}{% for flag in child.flagsblocks.FLAG %} [F]{% endfor %}{% for flag in child.flagsblocks.BLOCK %} [B]{% endfor %}{% endif %}", color: '#595959' },
+    {% if GET['masses'] %}
+        { text: '{{ child.assets_mass is not null ? child.assets_mass|number_format(2, ".", "") : (child.assetTypes_mass is not null and child.assetTypes_mass != 0 ? child.assetTypes_mass|number_format(2, ".", "") : "") }}', style: { alignment: 'right' } },
+    {% endif %}
+    {% if project.projectsTypes_config_finance == 1 %}
+        { text: '', colSpan: 5 }, {}, {}, {}, {},
+    {% endif %}
+],
+            {% endfor %}
+        {% endif %}
     {% endif %}
 {% endfor %}

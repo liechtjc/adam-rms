@@ -513,7 +513,7 @@
         try {
             var pdf = pdfMake.createPdf(docDefinition);
             {% if GET['draft'] or CONFIG.FILES_ENABLED != "Enabled" or USERDATA.instance.instances_storageEnabled != 1 %}
-            pdf.download("Draft_{{ "now"|date("y-m-d") }}_{% if project.clients_name %}{{ project.clients_name|replace({' ':'-'})|escape("js") }}-{% endif %}{{ project.projects_name|replace({' ':'-'})|escape("js") }}.pdf", function() {
+            pdf.download("{{ "now"|date("y-m-d") }}_{% if project.clients_name %}{{ project.clients_name|replace({' ':'-'})|escape("js") }}_{% endif %}{{ project.projects_name|replace({' ':'-'})|escape("js") }}_{{ GET['fileType'] }}_draft.pdf", function() {
                 // Firefox takes a bit longer to do file actions, so delay closing this tab a little
                 setTimeout(() => {window.close()}, 100)
             });
@@ -535,7 +535,7 @@
                     } else if (response.error && response.error.code) {
                         alert(response.error.message);
                     } else if (response.result && response.response && response.response.url) {
-                        pdf.download("v{{ fileNumber|escape("js") }}_{{ "now"|date("y-m-d") }}_{% if project.clients_name %}{{ project.clients_name|replace({' ':'-'})|escape("js") }}-{% endif %}{{ project.projects_name|replace({' ':'-'})|escape("js") }}.pdf", function() {
+                        pdf.download("{{ "now"|date("y-m-d") }}_{% if project.clients_name %}{{ project.clients_name|replace({' ':'-'})|escape("js") }}_{% endif %}{{ project.projects_name|replace({' ':'-'})|escape("js") }}_{{ GET['fileType'] }}_v{{ fileNumber|escape("js") }}.pdf", function() {
                             // Firefox takes a bit longer to do file actions, so delay closing this tab a little
                             setTimeout(() => {window.close()}, 100)
                         });

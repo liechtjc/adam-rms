@@ -175,32 +175,7 @@
                     {% endfor %}
                     {% set allAssets = allAssets|sort((a, b) => a['assets'][0].assetCategories_name <=> b['assets'][0].assetCategories_name) %}
 
-                    {# Build map: assetsAssignments_id → linked children #}
-                    {% set linkedMap = {} %}
-                    {% for type in allAssets %}
-                        {% for asset in type['assets'] %}
-                            {% if asset.assetsAssignments_linkedTo %}
-                                {% set pid = asset.assetsAssignments_linkedTo %}
-                                {% set existing = linkedMap[pid] is defined ? linkedMap[pid] : [] %}
-                                {% set linkedMap = linkedMap|merge({(pid): existing|merge([asset])}) %}
-                            {% endif %}
-                        {% endfor %}
-                    {% endfor %}
-                    {# Remove linked assets from their type groups — they render below their parent #}
-                    {% set filteredAssets = [] %}
-                    {% for type in allAssets %}
-                        {% set mainOnly = [] %}
-                        {% for asset in type['assets'] %}
-                            {% if not asset.assetsAssignments_linkedTo %}
-                                {% set mainOnly = mainOnly|merge([asset]) %}
-                            {% endif %}
-                        {% endfor %}
-                        {% if mainOnly|length > 0 %}
-                            {% set filteredAssets = filteredAssets|merge([type|merge({'assets': mainOnly})]) %}
-                        {% endif %}
-                    {% endfor %}
-
-                    {% if filteredAssets|length > 0 %}
+                    {% if allAssets|length > 0 %}
                         {
                             table: {
                                 headerRows: 1,
@@ -228,7 +203,7 @@
                                         {% endif %}
                                     ],
                                 {% set currentCategory = "" %}
-                                {% for type in filteredAssets %}
+                                {% for type in allAssets %}
                                     {% if type['assets'][0].assetCategories_name != currentCategory %}
                                         {% set currentCategory = type['assets'][0].assetCategories_name %}
                                         {% set currentCategoryID = type['assets'][0].assetCategories_id %}
@@ -242,7 +217,7 @@
                                         {% for i in range(2, columnCount) %}{},{% endfor %}
                                     ],
                                     {% endif %}
-                                    {% embed 'project/twigIncludes/assetList/tableItemPDF.twig' with {"type": type, "all": filteredAssets, "categoryid": currentCategoryID, "instanceid": USERDATA.instance.instances_id, "linkedMap": linkedMap} %}{% endembed %}
+                                    {% embed 'project/twigIncludes/assetList/tableItemPDF.twig' with {"type": type, "all": allAssets, "categoryid": currentCategoryID, "instanceid": USERDATA.instance.instances_id} %}{% endembed %}
                                 {% endfor %}
                                 ],
                             },

@@ -183,7 +183,7 @@
                         {% set mainOnly = [] %}
                         {% for asset in type['assets'] %}
                             {% if asset.assetsAssignments_linkedTo %}
-                                {% set pid = asset.assetsAssignments_linkedTo %}
+                                {% set pid = 'k' ~ asset.assetsAssignments_linkedTo %}
                                 {% set existing = linkedMap[pid] is defined ? linkedMap[pid] : [] %}
                                 {% set linkedMap = linkedMap|merge({(pid): existing|merge([asset])}) %}
                             {% else %}

@@ -111,8 +111,8 @@
     {% endif %}
 ],
         {# Render cross-type linked children immediately after this parent asset #}
-        {% if linkedMap is defined and linkedMap[assetAssignment.assetsAssignments_id] is defined %}
-            {% for child in linkedMap[assetAssignment.assetsAssignments_id] %}
+        {% if linkedMap is defined and linkedMap['k' ~ assetAssignment.assetsAssignments_id] is defined %}
+            {% for child in linkedMap['k' ~ assetAssignment.assetsAssignments_id] %}
 [
     {% if GET['checkboxes'] %}'[  ]',{% endif %}
     '{{ child.assets_tag|aTag|escape("js") }}',

@@ -79,7 +79,8 @@
                 {% embed 'project/twigIncludes/assetList/table.twig' with {"instanceid": USERDATA.instance.instances_id} %}
                     {% block tableBody %}
                         {% set currentCategory = "" %}
-                        {% for type in FINANCIALS.assetsAssigned %}
+                        {% set sortedAssetsAssigned = FINANCIALS.assetsAssigned|sort((a, b) => a['assets'][0].assetCategories_rank <=> b['assets'][0].assetCategories_rank) %}
+                        {% for type in sortedAssetsAssigned %}
                             {% if type['assets'][0].assetCategories_name != currentCategory %}
                                 {% set currentCategory = type['assets'][0].assetCategories_name %}
                                 {% set currentCategoryID = type['assets'][0].assetCategories_id %}
@@ -89,7 +90,7 @@
                                     </td>
                                 </tr>
                             {% endif %}
-                            {% embed 'project/twigIncludes/assetList/tableItem.twig' with {"type": type,"all": FINANCIALS.assetsAssigned, "categoryid":currentCategoryID,"instanceid": USERDATA.instance.instances_id} %}{% endembed %}
+                            {% embed 'project/twigIncludes/assetList/tableItem.twig' with {"type": type,"all": sortedAssetsAssigned, "categoryid":currentCategoryID,"instanceid": USERDATA.instance.instances_id} %}{% endembed %}
                         {% endfor %}
                     {% endblock %}
                 {% endembed %}
@@ -99,7 +100,8 @@
                     {% embed 'project/twigIncludes/assetList/table.twig' with {"instanceid": instance['instance'].instances_id } %}
                         {% block tableBody %}
                             {% set currentCategory = "" %}
-                            {% for type in instance['assets'] %}
+                            {% set sortedInstanceAssets = instance['assets']|sort((a, b) => a['assets'][0].assetCategories_rank <=> b['assets'][0].assetCategories_rank) %}
+                            {% for type in sortedInstanceAssets %}
                                 {% if type['assets'][0].assetCategories_name != currentCategory %}
                                     {% set currentCategory = type['assets'][0].assetCategories_name %}
                                     {% set currentCategoryID = type['assets'][0].assetCategories_id %}
@@ -109,7 +111,7 @@
                                         </td>
                                     </tr>
                                 {% endif %}
-                                {% embed 'project/twigIncludes/assetList/tableItem.twig' with {"type": type,"all": instance, "categoryid":currentCategoryID,"instanceid": instance['instance'].instances_id} %}{% endembed %}
+                                {% embed 'project/twigIncludes/assetList/tableItem.twig' with {"type": type,"all": sortedInstanceAssets, "categoryid":currentCategoryID,"instanceid": instance['instance'].instances_id} %}{% endembed %}
                             {% endfor %}
                         {% endblock %}
                     {% endembed %}

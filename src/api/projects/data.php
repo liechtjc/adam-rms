@@ -99,6 +99,28 @@ function projectFinancials($project) {
     $return['prices'] = ["subTotal" => new Money(null, new Currency($AUTH->data['instance']['instances_config_currency'])), "discounts" => new Money(null, new Currency($AUTH->data['instance']['instances_config_currency'])), "total" => new Money(null, new Currency($AUTH->data['instance']['instances_config_currency']))];
 
     $return['priceMaths'] = $projectFinanceHelper->durationMaths($project['projects_id']);
+
+    // Reorder: inject linked children immediately after their parent asset.
+    // Must run before the instance routing split below — cross-instance parent-child
+    // pairs must stay together regardless of which bucket they end up in.
+    $childrenByParent = [];
+    foreach ($assets as $asset) {
+        if ($asset['assetsAssignments_linkedTo'] !== null) {
+            $childrenByParent[$asset['assetsAssignments_linkedTo']][] = $asset;
+        }
+    }
+    $ordered = [];
+    foreach ($assets as $asset) {
+        if ($asset['assetsAssignments_linkedTo'] !== null) continue;
+        $ordered[] = $asset;
+        if (isset($childrenByParent[$asset['assetsAssignments_id']])) {
+            foreach ($childrenByParent[$asset['assetsAssignments_id']] as $child) {
+                $ordered[] = $child;
+            }
+        }
+    }
+    $assets = $ordered;
+
     foreach ($assets as $asset) {
         $return['mass'] += ($asset['assets_mass'] == null ? $asset['assetTypes_mass'] : $asset['assets_mass']);
         $asset['value'] = new Money(($asset['assets_value'] != null ? $asset['assets_value'] : $asset['assetTypes_value']), new Currency($AUTH->data['instance']['instances_config_currency']));

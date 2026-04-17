@@ -54,32 +54,54 @@ foreach ($projects as $project) {
 }
 finish(true, null, $return);
 
-/** @OA\Get(
- *     path="/projects/list.php", 
- *     summary="List", 
- *     description="Get a list of projects  
+/** @OA\Post(
+ *     path="/projects/list.php",
+ *     summary="List",
+ *     description="Get a list of projects
 Requires Instance Permission PROJECTS:VIEW
-", 
- *     operationId="list", 
- *     tags={"projects"}, 
+",
+ *     operationId="list",
+ *     tags={"projects"},
  *     @OA\Response(
- *         response="200", 
+ *         response="200",
  *         description="Success",
  *         @OA\MediaType(
- *             mediaType="application/json", 
- *             @OA\Schema( 
- *                 type="object", 
+ *             mediaType="application/json",
+ *             @OA\Schema(
+ *                 type="object",
  *                 @OA\Property(
- *                     property="result", 
- *                     type="boolean", 
+ *                     property="result",
+ *                     type="boolean",
  *                     description="Whether the request was successful",
+ *                 ),
+ *                 @OA\Property(
+ *                     property="data",
+ *                     type="array",
+ *                     description="List of projects",
+ *                     @OA\Items(
+ *                         type="object",
+ *                         @OA\Property(property="projects_id", type="number"),
+ *                         @OA\Property(property="projects_name", type="string"),
+ *                         @OA\Property(property="clients_name", type="string"),
+ *                         @OA\Property(property="projects_manager", type="number"),
+ *                         @OA\Property(property="thisProjectManager", type="boolean"),
+ *                         @OA\Property(property="projectsStatuses_id", type="number", nullable=true),
+ *                         @OA\Property(property="subprojects", type="array", description="Only populated when subprojects param is set", @OA\Items(type="object")),
+ *                     ),
  *                 ),
  *             ),
  *         ),
- *     ), 
+ *     ),
  *     @OA\Response(
- *         response="404", 
+ *         response="404",
  *         description="Permission Error",
- *     ), 
- *     )
+ *     ),
+ *     @OA\Parameter(
+ *         name="subprojects",
+ *         in="query",
+ *         description="If set, restricts the main list to top-level projects only and populates each project's subprojects array with its children",
+ *         required=false,
+ *         @OA\Schema(type="string"),
+ *     ),
+ * )
  */

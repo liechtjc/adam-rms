@@ -16,7 +16,7 @@ if (isset($_POST['subprojects'])) {
     $DBLIB->where("projects.projects_parent_project_id IS NULL");
 }
 
-$projects = $DBLIB->get("projects", null, ["projects.projects_id", "projects.projects_name", "clients.clients_name", "projects.projects_manager"]);
+$projects = $DBLIB->get("projects", null, ["projects.projects_id", "projects.projects_name", "clients.clients_name", "projects.projects_manager", "projects.projectsStatuses_id"]);
 
 foreach ($projects as $project) {
     $subprojectData = [];
@@ -29,14 +29,15 @@ foreach ($projects as $project) {
         $DBLIB->orderBy("projects.projects_dates_deliver_start", "ASC");
         $DBLIB->orderBy("projects.projects_name", "ASC");
         $DBLIB->orderBy("projects.projects_created", "ASC");
-        $subprojects = $DBLIB->get("projects", null, ["projects_id", "projects_archived", "projects_name", "clients_name", "projects_dates_deliver_start", "projects_dates_deliver_end", "projects_dates_use_start", "projects_dates_use_end", "projects_status", "projects_manager"]);
+        $subprojects = $DBLIB->get("projects", null, ["projects_id", "projects_archived", "projects_name", "clients_name", "projects_dates_deliver_start", "projects_dates_deliver_end", "projects_dates_use_start", "projects_dates_use_end", "projects_status", "projects_manager", "projectsStatuses_id"]);
         foreach ($subprojects as $subproject) {
             $subprojectData[] = [
                 "projects_id" => $subproject['projects_id'],
                 "projects_name" => $subproject['projects_name'],
                 "clients_name" => $subproject['clients_name'],
                 "projects_manager" => $subproject['projects_manager'],
-                "thisProjectManager" => ($AUTH->data['users_userid'] == $subproject['projects_manager'])
+                "thisProjectManager" => ($AUTH->data['users_userid'] == $subproject['projects_manager']),
+                "projectsStatuses_id" => $subproject['projectsStatuses_id'],
             ];
         }
     }
@@ -47,6 +48,7 @@ foreach ($projects as $project) {
         "clients_name" => $project['clients_name'],
         "projects_manager" => $project['projects_manager'],
         "thisProjectManager" => ($AUTH->data['users_userid'] == $project['projects_manager']),
+        "projectsStatuses_id" => $project['projectsStatuses_id'],
         "subprojects" => $subprojectData,
     ];
 }

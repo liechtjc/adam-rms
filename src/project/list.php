@@ -58,7 +58,7 @@ $DBLIB->orderBy("projects.projects_archived", "ASC");
 $DBLIB->orderBy("projects.projects_dates_use_start", "ASC");
 $DBLIB->orderBy("projects.projects_name", "ASC");
 $DBLIB->orderBy("projects.projects_created", "ASC");
-$projectlist = $DBLIB->arraybuilder()->paginate("projects", $page, ["projects_id", "projectsTypes.*","projects_archived", "projects_name", "clients_name", "projects.clients_id", "projects_dates_deliver_start", "projects_dates_deliver_end","projects_dates_use_start", "projects_dates_use_end", "projects_manager", "users.users_name1", "users.users_name2", "users.users_email", "users.users_thumbnail", "projectsStatuses.projectsStatuses_id", "projectsStatuses.projectsStatuses_name", "projectsStatuses.projectsStatuses_description"]);
+$projectlist = $DBLIB->arraybuilder()->paginate("projects", $page, ["projects_id", "projectsTypes.*","projects_archived", "projects_name", "clients_name", "projects.clients_id", "projects_dates_deliver_start", "projects_dates_deliver_end","projects_dates_use_start", "projects_dates_use_end", "projects_manager", "users.users_name1", "users.users_name2", "users.users_email", "users.users_thumbnail", "projectsStatuses.projectsStatuses_name", "projectsStatuses.projectsStatuses_description"]);
 $PAGEDATA['pagination'] = ["page" => $page, "total" => $DBLIB->totalPages];
 $PAGEDATA['PROJECTSLIST'] = [];
 foreach ($projectlist as $project) {
@@ -76,7 +76,7 @@ foreach ($projectlist as $project) {
     $DBLIB->orderBy("projects.projects_dates_use_start", "ASC");
     $DBLIB->orderBy("projects.projects_name", "ASC");
     $DBLIB->orderBy("projects.projects_created", "ASC");
-    $subProjects = $DBLIB->get("projects", null, ["projects_id", "projectsTypes.*","projects_archived", "projects_name", "clients_name", "projects.clients_id", "projects_dates_deliver_start", "projects_dates_deliver_end","projects_dates_use_start", "projects_dates_use_end", "projects_manager", "users.users_name1", "users.users_name2", "users.users_email", "users.users_thumbnail", "projectsStatuses.projectsStatuses_id", "projectsStatuses.projectsStatuses_name", "projectsStatuses.projectsStatuses_description"]);
+    $subProjects = $DBLIB->get("projects", null, ["projects_id", "projectsTypes.*","projects_archived", "projects_name", "clients_name", "projects.clients_id", "projects_dates_deliver_start", "projects_dates_deliver_end","projects_dates_use_start", "projects_dates_use_end", "projects_manager", "users.users_name1", "users.users_name2", "users.users_email", "users.users_thumbnail", "projectsStatuses.projectsStatuses_name", "projectsStatuses.projectsStatuses_description"]);
     $project['subProjects'] = [];
     foreach ($subProjects as $subProject) {
         $DBLIB->where("projects_id", $project['projects_id']);

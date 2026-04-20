@@ -37,7 +37,13 @@ if ($_FILES['csvFile']['type'] != "text/csv" && $_FILES['csvFile']['type'] != "a
 if ($_FILES['csvFile']['size'] == 0) finish(false, "File is empty");
 
 //File is probably ok, lets try and read it
-$csv = array_map('str_getcsv', file($_FILES['csvFile']['tmp_name']));
+$csv = [];
+if (($handle = fopen($_FILES['csvFile']['tmp_name'], 'r')) !== false) {
+    while (($row = fgetcsv($handle)) !== false) {
+        $csv[] = $row;
+    }
+    fclose($handle);
+}
 //Check the file has the correct headers
 if ($csv[0] != $CSVHEADERS) finish(false, "File does not have the correct headers");
 

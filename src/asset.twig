@@ -1116,6 +1116,10 @@
                                                 <input type="checkbox" class="form-check-input" name="assetTypes_private" value="1" id="assetTypePrivateCheck" {% if asset.assetInstances_id == USERDATA.instance.instances_id %}checked{% endif %}>
                                                 <label class="form-check-label" for="assetTypePrivateCheck">Private <small>(only visible to this business)</small></label>
                                             </div>
+                                            <div class="form-check mt-2 mb-2">
+                                                <input type="checkbox" class="form-check-input" name="assetTypes_internal" value="1" id="assetTypeInternalCheck" {% if asset.assetTypes_internal %}checked{% endif %}>
+                                                <label class="form-check-label" for="assetTypeInternalCheck">Internal <small>(excluded from public catalog)</small></label>
+                                            </div>
                                             </form>
                                             <button class="btn btn-default float-right" id="saveSettingsButton" style="margin-top:10px;margin-bottom:10px;">Save</button>
                                         </div>

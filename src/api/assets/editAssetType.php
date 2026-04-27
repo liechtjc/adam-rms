@@ -28,7 +28,7 @@ $assetType = $DBLIB->getone("assetTypes", ['assetTypes.assetTypes_mass','assetTy
 if (!$assetType) finish(false);
 
 // Build update data from whitelisted fields
-$updateData = array_intersect_key( $array, array_flip( ['assetTypes_name','assetCategories_id','assetTypes_productLink','manufacturers_id','assetTypes_description','assetTypes_definableFields','assetTypes_mass','assetTypes_inserted',"assetTypes_dayRate","assetTypes_weekRate","assetTypes_value"] ) );
+$updateData = array_intersect_key( $array, array_flip( ['assetTypes_name','assetCategories_id','assetTypes_productLink','manufacturers_id','assetTypes_description','assetTypes_definableFields','assetTypes_mass','assetTypes_inserted',"assetTypes_dayRate","assetTypes_weekRate","assetTypes_value","assetTypes_internal"] ) );
 
 // Handle private/global toggle
 $wantsPrivate = isset($array['assetTypes_private']) && $array['assetTypes_private'] == '1';

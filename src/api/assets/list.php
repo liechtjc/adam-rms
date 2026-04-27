@@ -8,13 +8,24 @@ if (isset($_POST['page'])) $page = $bCMS->sanitizeString($_POST['page']);
 else $page = 1;
 $nopage = isset($_POST['nopage']) && $_POST['nopage'];
 $DBLIB->pageLimit = (isset($_POST['pageLimit']) ? $_POST['pageLimit'] : 20); //Users per page
+
+// instance=all: cross-instance mode (requires ASSETS:EDIT:ANY_ASSET_TYPE server permission)
+// default (omitted): current session instance only
+// Without the required permission, silently falls back to current-instance behavior
+$instanceFilter = (isset($_POST['instance']) && $_POST['instance'] === 'all'
+    && $AUTH->serverPermissionCheck("ASSETS:EDIT:ANY_ASSET_TYPE"))
+    ? null
+    : $AUTH->data['instance']['instances_id'];
+
 if (isset($_POST['category'])) $DBLIB->where("assetTypes.assetCategories_id", $_POST['category']);
 if (isset($_POST['manufacturer'])) $DBLIB->where("manufacturers.manufacturers_id", $_POST['manufacturer']);
 if (isset($_POST['assetTypes_id'])) $DBLIB->where("assetTypes.assetTypes_id", $_POST['assetTypes_id']);
+if (isset($_POST['no_internal']) && $_POST['no_internal']) $DBLIB->where("assetTypes.assetTypes_internal", 0);
 $DBLIB->orderBy("assetCategories.assetCategories_id", "ASC");
 $DBLIB->orderBy("assetTypes.assetTypes_name", "ASC");
 $DBLIB->join("manufacturers", "manufacturers.manufacturers_id=assetTypes.manufacturers_id", "LEFT");
-$DBLIB->where("((SELECT COUNT(*) FROM assets WHERE assetTypes.assetTypes_id=assets.assetTypes_id AND assets.instances_id = '" . $AUTH->data['instance']['instances_id'] . "' AND (assets.assets_endDate IS NULL OR assets.assets_endDate >= CURRENT_TIMESTAMP()) AND assets_deleted = 0" . (!isset($_POST['all']) ? ' AND assets.assets_linkedTo IS NULL' : '') .") > 0)");
+$instanceClause = $instanceFilter ? "AND assets.instances_id = '" . $instanceFilter . "' " : "";
+$DBLIB->where("((SELECT COUNT(*) FROM assets WHERE assetTypes.assetTypes_id=assets.assetTypes_id {$instanceClause}AND (assets.assets_endDate IS NULL OR assets.assets_endDate >= CURRENT_TIMESTAMP()) AND assets_deleted = 0" . (!isset($_POST['all']) ? ' AND assets.assets_linkedTo IS NULL' : '') . ") > 0)");
 $DBLIB->join("assetCategories", "assetCategories.assetCategories_id=assetTypes.assetCategories_id", "LEFT");
 $DBLIB->join("assetCategoriesGroups", "assetCategoriesGroups.assetCategoriesGroups_id=assetCategories.assetCategoriesGroups_id", "LEFT");
 if (strlen($PAGEDATA['search']) > 0) {
@@ -51,7 +62,7 @@ foreach ($assets as $asset) {
 
 
 
-    $DBLIB->where("assets.instances_id", $AUTH->data['instance']['instances_id']);
+    if ($instanceFilter) $DBLIB->where("assets.instances_id", $instanceFilter);
     $DBLIB->where("assets.assetTypes_id", $asset['assetTypes_id']);
     $DBLIB->where("(assets.assets_endDate IS NULL OR assets.assets_endDate >= CURRENT_TIMESTAMP())");
     $DBLIB->where("assets_deleted", 0);

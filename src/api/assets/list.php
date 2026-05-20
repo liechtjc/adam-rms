@@ -24,8 +24,22 @@ if (isset($_POST['no_internal']) && $_POST['no_internal']) $DBLIB->where("assetT
 $DBLIB->orderBy("assetCategories.assetCategories_id", "ASC");
 $DBLIB->orderBy("assetTypes.assetTypes_name", "ASC");
 $DBLIB->join("manufacturers", "manufacturers.manufacturers_id=assetTypes.manufacturers_id", "LEFT");
-$instanceClause = $instanceFilter ? "AND assets.instances_id = '" . $instanceFilter . "' " : "";
-$DBLIB->where("((SELECT COUNT(*) FROM assets WHERE assetTypes.assetTypes_id=assets.assetTypes_id {$instanceClause}AND (assets.assets_endDate IS NULL OR assets.assets_endDate >= CURRENT_TIMESTAMP()) AND assets_deleted = 0" . (!isset($_POST['all']) ? ' AND assets.assets_linkedTo IS NULL' : '') . ") > 0)");
+$linkedToClause = !isset($_POST['all']) ? ' AND assets.assets_linkedTo IS NULL' : '';
+$dateClause = "AND (assets.assets_endDate IS NULL OR assets.assets_endDate >= CURRENT_TIMESTAMP()) AND assets_deleted = 0{$linkedToClause}";
+
+if ($instanceFilter) {
+    // Per-instance mode: all assetTypes must have at least one asset in this instance
+    $DBLIB->where("((SELECT COUNT(*) FROM assets WHERE assetTypes.assetTypes_id=assets.assetTypes_id AND assets.instances_id = '{$instanceFilter}' {$dateClause}) > 0)");
+} else {
+    // All-instances mode — two different rules based on assetType ownership:
+    // - Global assetTypes (instances_id IS NULL): any asset in any instance qualifies
+    // - Instance-private assetTypes: only assets belonging to their own instance qualify
+    $DBLIB->where("(
+        (assetTypes.instances_id IS NULL AND (SELECT COUNT(*) FROM assets WHERE assetTypes.assetTypes_id=assets.assetTypes_id {$dateClause}) > 0)
+        OR
+        (assetTypes.instances_id IS NOT NULL AND (SELECT COUNT(*) FROM assets WHERE assetTypes.assetTypes_id=assets.assetTypes_id AND assets.instances_id=assetTypes.instances_id {$dateClause}) > 0)
+    )");
+}
 $DBLIB->join("assetCategories", "assetCategories.assetCategories_id=assetTypes.assetCategories_id", "LEFT");
 $DBLIB->join("assetCategoriesGroups", "assetCategoriesGroups.assetCategoriesGroups_id=assetCategories.assetCategoriesGroups_id", "LEFT");
 if (strlen($PAGEDATA['search']) > 0) {
@@ -37,10 +51,10 @@ if (strlen($PAGEDATA['search']) > 0) {
     )");
 }
 if ($nopage) {
-    $assets = $DBLIB->arraybuilder()->get('assetTypes', null, ["assetTypes.*", "manufacturers.*", "assetCategories.*", "assetCategoriesGroups_name"]);
+    $assets = $DBLIB->arraybuilder()->get('assetTypes', null, ["assetTypes.*", "manufacturers.*", "assetCategories.*", "assetCategoriesGroups_name", "assetTypes.instances_id AS assetType_instances_id"]);
     $PAGEDATA['pagination'] = null;
 } else {
-    $assets = $DBLIB->arraybuilder()->paginate('assetTypes', $page, ["assetTypes.*", "manufacturers.*", "assetCategories.*", "assetCategoriesGroups_name"]);
+    $assets = $DBLIB->arraybuilder()->paginate('assetTypes', $page, ["assetTypes.*", "manufacturers.*", "assetCategories.*", "assetCategoriesGroups_name", "assetTypes.instances_id AS assetType_instances_id"]);
     $PAGEDATA['pagination'] = ["page" => $page, "total" => $DBLIB->totalPages];
 }
 
@@ -62,7 +76,14 @@ foreach ($assets as $asset) {
 
 
 
-    if ($instanceFilter) $DBLIB->where("assets.instances_id", $instanceFilter);
+    if ($instanceFilter) {
+        // Per-instance mode: fetch only assets belonging to this instance
+        $DBLIB->where("assets.instances_id", $instanceFilter);
+    } elseif ($asset['assetType_instances_id']) {
+        // All-instances mode, instance-private assetType: scope assets to its own instance
+        $DBLIB->where("assets.instances_id", $asset['assetType_instances_id']);
+    }
+    // All-instances mode, global assetType (assetType_instances_id = null): no instance filter
     $DBLIB->where("assets.assetTypes_id", $asset['assetTypes_id']);
     $DBLIB->where("(assets.assets_endDate IS NULL OR assets.assets_endDate >= CURRENT_TIMESTAMP())");
     $DBLIB->where("assets_deleted", 0);

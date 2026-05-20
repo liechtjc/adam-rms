@@ -120,7 +120,7 @@ for ($i = 1; $i < count($csv); $i++) {
         if (!$manufacturer) {
             $manufacturer = [
                 "manufacturers_name" => $row[8],
-                "instances_id" => $_POST['instances_id']
+                "instances_id" => null
             ];
             $manufacturer['manufacturers_id'] = $DBLIB->insert("manufacturers", $manufacturer);
         }
@@ -150,7 +150,8 @@ for ($i = 1; $i < count($csv); $i++) {
             "assetTypes_name" => $row[0],
             "assetCategories_id" => $row[7],
             "manufacturers_id" => $manufacturer['manufacturers_id'],
-            "instances_id" => $_POST['instances_id'],
+            "instances_id" => null,
+            "assetTypes_currency" => $instance['instances_config_currency'],
             "assetTypes_description" => $row[1],
             "assetTypes_productLink" => $row[2],
             "assetTypes_definableFields" => $definableFields,

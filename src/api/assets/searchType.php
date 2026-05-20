@@ -25,12 +25,20 @@ $DBLIB->join("manufacturers", "manufacturers.manufacturers_id=assetTypes.manufac
 $DBLIB->join("assetCategories", "assetCategories.assetCategories_id=assetTypes.assetCategories_id", "LEFT");
 $DBLIB->join("assetCategoriesGroups", "assetCategoriesGroups.assetCategoriesGroups_id=assetCategories.assetCategoriesGroups_id", "LEFT");
 if (isset($_POST['term'])) {
+    // No row limit when a search term is provided — a hard cap of 15 would silently
+    // hide valid matches for manufacturers with many asset types (e.g. alphabetically
+    // late entries like "VideoMicro" among 18+ RODE types would never appear).
     $DBLIB->where("(
         assetTypes_description LIKE '%" . $bCMS->sanitizeStringMYSQL($_POST['term']) . "%' OR
         assetTypes_name LIKE '%" . $bCMS->sanitizeStringMYSQL($_POST['term']) . "%'
     )");
-} else $DBLIB->orderBy("assetTypes_name", "ASC");
-$assets = $DBLIB->get("assetTypes", 15, ["assetTypes_name", "assetTypes_id", "assetCategories_name", "assetCategoriesGroups_name", "manufacturers.manufacturers_name"]);
+    $limit = null;
+} else {
+    // No search term: cap at 15 to avoid dumping the full catalogue on initial load.
+    $DBLIB->orderBy("assetTypes_name", "ASC");
+    $limit = 15;
+}
+$assets = $DBLIB->get("assetTypes", $limit, ["assetTypes_name", "assetTypes_id", "assetCategories_name", "assetCategoriesGroups_name", "manufacturers.manufacturers_name"]);
 if (!$assets) finish(false, ["code" => "LIST-ASSETTYPES-FAIL", "message"=> "Could not search"]);
 else finish(true, null, $assets);
 

@@ -71,6 +71,7 @@ foreach ($assets as $asset) {
     $asset['assetTypes_value_format'] = apiMoney($asset['assetTypes_value']);
     $asset['assetTypes_dayRate_format'] = apiMoney($asset['assetTypes_dayRate']);
     $asset['assetTypes_weekRate_format'] = apiMoney($asset['assetTypes_weekRate']);
+    $asset['assetTypes_description_format'] = nl2br(htmlspecialchars($asset['assetTypes_description'] ?? ''));
 
 
 

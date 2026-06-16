@@ -2,8 +2,11 @@
 require_once __DIR__ . '/../apiHeadSecure.php';
 if (!$AUTH->instancePermissionCheck("BUSINESS:BUSINESS_SETTINGS:VIEW")) die("Sorry - you can't access this page");
 
+$instanceName = $AUTH->data['instance']['instances_name'];
+$safeInstanceName = preg_replace('/[^a-zA-Z0-9_-]/', '-', $instanceName);
+
 header("Content-type: text/csv");
-header("Content-Disposition: attachment; filename=insured-assets.csv");
+header("Content-Disposition: attachment; filename=insured-assets-" . $safeInstanceName . ".csv");
 header("Pragma: no-cache");
 header("Expires: 0");
 error_reporting(0);
@@ -29,18 +32,22 @@ $DBLIB->orderBy("assets.assets_tag", "ASC");
 
 $assets = $DBLIB->get('assets', null, [
     "assets.assets_tag", "assets.assets_value", "assets.assets_insured",
+    "assets.asset_definableFields_1", "assets.asset_definableFields_2",
     "assetTypes.assetTypes_name", "assetTypes.assetTypes_value",
     "manufacturers.manufacturers_name", "manufacturers.manufacturers_id"
 ]);
 
 $fp = fopen('php://output', 'w');
-fputcsv($fp, ["Asset Code", "Asset Name", "Manufacturer", "Value"], ",", "\"", "\\", "\r\n");
+fputcsv($fp, ["Insured Assets - " . $instanceName, "", "", "", "", ""], ",", "\"", "\\", "\r\n");
+fputcsv($fp, ["Asset Code", "Asset Name", "Manufacturer", "Definable Field 1", "Definable Field 2", "Value"], ",", "\"", "\\", "\r\n");
 foreach ($assets as $asset) {
     $value = $asset['assets_value'] !== null ? $asset['assets_value'] : ($asset['assetTypes_value'] ?? 0);
     fputcsv($fp, [
         $asset['assets_tag'],
         $asset['assetTypes_name'],
         ($asset['manufacturers_id'] != 1 ? $asset['manufacturers_name'] : ""),
+        $asset['asset_definableFields_1'] ?? "",
+        $asset['asset_definableFields_2'] ?? "",
         $moneyFormatter->format(new Money($value, new Currency($AUTH->data['instance']['instances_config_currency']))),
     ], ",", "\"", "\\", "\r\n");
 }

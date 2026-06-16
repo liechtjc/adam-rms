@@ -38,8 +38,11 @@ $moneyParser = new DecimalMoneyParser($currencies);
 $array['assetTypes_value'] = $moneyParser->parse(($array['assetTypes_value'] ?? '0.00'), $AUTH->data['instance']['instances_config_currency'])->getAmount();
 $array['assetTypes_dayRate'] = $moneyParser->parse(($array['assetTypes_dayRate'] ?? '0.00'), $AUTH->data['instance']['instances_config_currency'])->getAmount();
 $array['assetTypes_weekRate'] = $moneyParser->parse(($array['assetTypes_weekRate'] ?? '0.00'), $AUTH->data['instance']['instances_config_currency'])->getAmount();
+$array['assetTypes_internal'] = (isset($array['assetTypes_internal']) && $array['assetTypes_internal'] == '1') ? 1 : 0;
+$array['assetTypes_insured'] = (isset($array['assetTypes_insured']) && $array['assetTypes_insured'] == '1') ? 1 : 0;
+if ($array['assetTypes_insured'] && $array['assetTypes_value'] == 0) finish(false, ["code" => "VALIDATION-ERROR", "message" => "A value must be set to mark an asset type as insured"]);
 
-$result = $DBLIB->insert("assetTypes", array_intersect_key( $array, array_flip( ['assetTypes_name','assetTypes_productLink','assetCategories_id','manufacturers_id','assetTypes_description','assetTypes_definableFields','assetTypes_mass','assetTypes_inserted','assetTypes_currency',"instances_id","assetTypes_dayRate","assetTypes_weekRate","assetTypes_value"] ) ));
+$result = $DBLIB->insert("assetTypes", array_intersect_key( $array, array_flip( ['assetTypes_name','assetTypes_productLink','assetCategories_id','manufacturers_id','assetTypes_description','assetTypes_definableFields','assetTypes_mass','assetTypes_inserted','assetTypes_currency',"instances_id","assetTypes_dayRate","assetTypes_weekRate","assetTypes_value","assetTypes_internal","assetTypes_insured"] ) ));
 if (!$result) finish(false, ["code" => "INSERT-FAIL", "message"=> "Could not insert asset type"]);
 else finish(true, null, ["assetTypes_id" => $result]);
 

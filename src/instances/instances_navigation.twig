@@ -237,6 +237,18 @@
                 <a href="{{ CONFIG.ROOTURL }}/instances/configuration/barcodes.php" class="small-box-footer">Manage Barcodes <i class="fas fa-arrow-circle-right"></i></a>
             </div>
         </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success">
+                <div class="inner">
+                    <h3>Insurance Export</h3>
+                    <p>Download a CSV of all insured assets to submit to your insurance provider.</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-file-csv"></i>
+                </div>
+                <a href="{{ CONFIG.ROOTURL }}/api/assets/exportInsurance.php" class="small-box-footer">Download CSV <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
+        </div>
         {% endif %}
     </div>
 {% endblock %}

@@ -389,6 +389,16 @@
                                                             </div>
                                                             <input type="number" step="0.001" min="0" name="assets_weekRate" class="form-control" value="{{ assets[0].assets_weekRate|moneyDecimal }}" />
                                                         </div>
+                                                        <div class="input-group">
+                                                            <div class="input-group-prepend">
+                                                                <span class="input-group-text">Insured</span>
+                                                            </div>
+                                                            <select name="assets_insured" class="form-control">
+                                                                <option value="" {{ assets[0].assets_insured is null ? 'selected' }}>Inherit from asset type</option>
+                                                                <option value="1" {{ assets[0].assets_insured == 1 ? 'selected' }}>Insured</option>
+                                                                <option value="0" {{ assets[0].assets_insured is not null and assets[0].assets_insured == 0 ? 'selected' }}>Not insured</option>
+                                                            </select>
+                                                        </div>
                                                     </form>
                                                     <button class="btn btn-default float-right" id="editAssetDetailsOverridesButton" style="margin-top:10px;margin-bottom:10px;">Save</button>
                                                 </div>
@@ -1120,6 +1130,10 @@
                                                 <input type="checkbox" class="form-check-input" name="assetTypes_internal" value="1" id="assetTypeInternalCheck" {% if asset.assetTypes_internal %}checked{% endif %}>
                                                 <label class="form-check-label" for="assetTypeInternalCheck">Internal <small>(excluded from public catalog)</small></label>
                                             </div>
+                                            <div class="form-check mt-2 mb-2">
+                                                <input type="checkbox" class="form-check-input" name="assetTypes_insured" value="1" id="assetTypeInsuredCheck" {% if asset.assetTypes_insured %}checked{% endif %}>
+                                                <label class="form-check-label" for="assetTypeInsuredCheck">Insured <small>(damage insurance contracted — requires a value to be set)</small></label>
+                                            </div>
                                             </form>
                                             <button class="btn btn-default float-right" id="saveSettingsButton" style="margin-top:10px;margin-bottom:10px;">Save</button>
                                         </div>
@@ -1622,7 +1636,8 @@
                 $('#saveSettingsButton').on('click', function() {
                     var formData = $("#addNewForm").serializeArray();
                     formData.push({"name": "manufacturers_id", "value":$('#manufacturer').val()}, {"name": "assetTypes_id", "value": "{{asset.assetTypes_id}}"});
-                    console.log(formData);
+                    if (!$('#assetTypeInternalCheck').is(':checked')) formData.push({"name": "assetTypes_internal", "value": "0"});
+                    if (!$('#assetTypeInsuredCheck').is(':checked')) formData.push({"name": "assetTypes_insured", "value": "0"});
                     ajaxcall("assets/editAssetType.php", {formData}, function (data) {
                         location.reload();
                     }, false);

@@ -27,8 +27,12 @@ $DBLIB->where("assetTypes_id", $array['assetTypes_id']);
 $assetType = $DBLIB->getone("assetTypes", ['assetTypes.assetTypes_mass','assetTypes.assetTypes_value',"assetTypes.assetTypes_dayRate","assetTypes.assetTypes_weekRate","assetTypes.instances_id"]);
 if (!$assetType) finish(false);
 
+$array['assetTypes_internal'] = (isset($array['assetTypes_internal']) && $array['assetTypes_internal'] == '1') ? 1 : 0;
+$array['assetTypes_insured'] = (isset($array['assetTypes_insured']) && $array['assetTypes_insured'] == '1') ? 1 : 0;
+if ($array['assetTypes_insured'] && $array['assetTypes_value'] == 0) finish(false, ["code" => "VALIDATION-ERROR", "message" => "A value must be set to mark an asset type as insured"]);
+
 // Build update data from whitelisted fields
-$updateData = array_intersect_key( $array, array_flip( ['assetTypes_name','assetCategories_id','assetTypes_productLink','manufacturers_id','assetTypes_description','assetTypes_definableFields','assetTypes_mass','assetTypes_inserted',"assetTypes_dayRate","assetTypes_weekRate","assetTypes_value","assetTypes_internal"] ) );
+$updateData = array_intersect_key( $array, array_flip( ['assetTypes_name','assetCategories_id','assetTypes_productLink','manufacturers_id','assetTypes_description','assetTypes_definableFields','assetTypes_mass','assetTypes_inserted',"assetTypes_dayRate","assetTypes_weekRate","assetTypes_value","assetTypes_internal","assetTypes_insured"] ) );
 
 // Handle private/global toggle
 $wantsPrivate = isset($array['assetTypes_private']) && $array['assetTypes_private'] == '1';

@@ -21,7 +21,8 @@ if (isset($_POST['category'])) $DBLIB->where("assetTypes.assetCategories_id", $_
 if (isset($_POST['manufacturer'])) $DBLIB->where("manufacturers.manufacturers_id", $_POST['manufacturer']);
 if (isset($_POST['assetTypes_id'])) $DBLIB->where("assetTypes.assetTypes_id", $_POST['assetTypes_id']);
 if (isset($_POST['no_internal']) && $_POST['no_internal']) $DBLIB->where("assetTypes.assetTypes_internal", 0);
-$DBLIB->orderBy("assetCategories.assetCategories_id", "ASC");
+$DBLIB->orderBy("assetCategoriesGroups.assetCategoriesGroups_order", "ASC");
+$DBLIB->orderBy("assetCategories.assetCategories_rank", "ASC");
 $DBLIB->orderBy("assetTypes.assetTypes_name", "ASC");
 $DBLIB->join("manufacturers", "manufacturers.manufacturers_id=assetTypes.manufacturers_id", "LEFT");
 $linkedToClause = !isset($_POST['all']) ? ' AND assets.assets_linkedTo IS NULL' : '';

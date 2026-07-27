@@ -48,10 +48,6 @@
                                 { text: "{{ project.projects_name|escape("js") }}", bold: true, fontSize: 16 },
                                 { text: "{{ GET['fileType']}}{% if fileNumber %} V{{ fileNumber|escape("js") }}{% endif %}", fontSize: 14 },
                                 { text: "{{ 'now'|date('j M Y') }}", color: '#595959' },
-                                {% if GET['pmdetails'] %}
-                                    { text: "{{ project.users_name1|escape("js") ~ " " ~ project.users_name2|escape("js") }}", bold: true },
-                                    { text: "{{ project.users_email|escape("js") }}" },
-                                {% endif %}
                             ]
                         }
                     ],
@@ -78,31 +74,45 @@
                 },
                 {% endif %}
                 " ",
+                {% if FINANCIALS.priceMaths['days'] > 0 %}
+                    {% set coeffVal = FINANCIALS.priceMaths['days'] %}
+                    {% set coeffSuffix = 'd' %}
+                {% else %}
+                    {% set coeffVal = FINANCIALS.priceMaths['weeks'] %}
+                    {% set coeffSuffix = 'w' %}
+                {% endif %}
+                {% set coeffFmt = coeffVal|number_format(2, '.', '') %}
+                {% if coeffFmt ends with '.00' %}
+                    {% set coeffDisplay = coeffVal|number_format(0, '.', '') ~ coeffSuffix %}
+                {% elseif coeffFmt ends with '0' %}
+                    {% set coeffDisplay = coeffVal|number_format(1, '.', '') ~ coeffSuffix %}
+                {% else %}
+                    {% set coeffDisplay = coeffFmt ~ coeffSuffix %}
+                {% endif %}
                 {
                     table: {
                         widths: [ "50%", "50%"],
                         body: [[
                             {
                                 table: {
+                                    widths: [ 110, '*' ],
                                     body: [
-                                        ['Our Reference:',"{{project.projects_id|escape("js")}}"],
-                                        {% if project.projects_dates_deliver_start %}
-                                            ['Deliver:',"{{ project.projects_dates_deliver_start|date("j M Y h:ia")|escape("js")}}"],
+                                        [{ text: 'Our Reference:', bold: true },"{{project.projects_id|escape("js")}}"],
+                                        {% if GET['pmdetails'] %}
+                                            [{ text: 'Contact:', bold: true },"{{ project.users_name1|escape("js") ~ " " ~ project.users_name2|escape("js") ~ " " ~ project.users_email|escape("js") }}"],
                                         {% endif %}
-                                        {% if project.projects_dates_use_start %}
-                                            ['Start:',"{{ project.projects_dates_use_start|date("j M Y h:ia")|escape("js")}}"],
+                                        {% if project.projects_dates_use_start or project.projects_dates_use_end %}
+                                            [{ text: 'Project Date:', bold: true },{ text: "{% if project.projects_dates_use_start %}{{ project.projects_dates_use_start|date("j M Y")|escape("js") }}{% endif %}{% if project.projects_dates_use_start and project.projects_dates_use_end %} - {% endif %}{% if project.projects_dates_use_end %}{{ project.projects_dates_use_end|date("j M Y")|escape("js") }}{% endif %}", noWrap: true }],
                                         {% endif %}
-                                        {% if project.projects_dates_use_end %}
-                                            ['Finish:',"{{ project.projects_dates_use_end|date("j M Y h:ia")|escape("js") }}"],
-                                        {% endif %}
-                                        {% if project.projects_dates_deliver_end %}
-                                            ['Collect:',"{{ project.projects_dates_deliver_end|date("j M Y h:ia")|escape("js") }}"],
+                                        [{ text: 'Coeff:', bold: true },{ text: "{{ coeffDisplay|escape("js") }}", bold: true }],
+                                        {% if project.projects_dates_deliver_start or project.projects_dates_deliver_end %}
+                                            [{ text: 'Pick-up / Drop-off:', bold: true },{ text: "{% if project.projects_dates_deliver_start %}{{ project.projects_dates_deliver_start|date("j M Y")|escape("js") }}{% endif %}{% if project.projects_dates_deliver_start and project.projects_dates_deliver_end %} - {% endif %}{% if project.projects_dates_deliver_end %}{{ project.projects_dates_deliver_end|date("j M Y")|escape("js") }}{% endif %}", noWrap: true }],
                                         {% endif %}
                                         {% if GET['totalmass'] and project.projectsTypes_config_assets == 1 %}
-                                            ['Mass Estimate:',"{{FINANCIALS.mass|mass|escape("js") }}"],
+                                            [{ text: 'Mass Estimate:', bold: true },"{{FINANCIALS.mass|mass|escape("js") }}"],
                                         {% endif %}
                                         {% if GET['totalvalue'] and project.projectsTypes_config_assets == 1 %}
-                                            ['Value Estimate:',"{{FINANCIALS.value|money|escape("js") }}"],
+                                            [{ text: 'Value Estimate:', bold: true },"{{FINANCIALS.value|money|escape("js") }}"],
                                         {% endif %}
                                     ],
                                 },
@@ -126,36 +136,26 @@
                     layout: 'noBorders',
                     margin: [ 0, 10, 0, 10 ]
                 },
-                {% if project.projects_invoiceNotes|length > 0 and GET['invoiceNotes'] %}
-                    { text: "Notes", style: { fontSize: 14, bold: true } },
-                    "{{ project.projects_invoiceNotes|escape("js") }}",
-                {% endif %}
-                {% if project.projects_deliveryNotes|length > 0 and GET['type'] == 'deliveryNote' %}
-                    { text: "Delivery Notes", style: { fontSize: 14, bold: true }, margin: [ 0, 20, 0, 0 ] },
-                    "{{ project.projects_deliveryNotes|escape("js") }}",
-                {% endif %}
+                {% set columnCount = 2 %}
+                {% if GET['checkboxes'] %}{% set columnCount = columnCount + 1 %}{% endif %}
+                {% if GET['masses'] %}{% set columnCount = columnCount + 1 %}{% endif %}
+                {% if project.projectsTypes_config_finance == 1 %}{% set columnCount = columnCount + 5 %}{% endif %}
+
+                {#
+                    pdfmake treats widths as CONTENT widths; padding is added on top.
+                    Custom layout below uses 2pt each side = 4pt overhead per column.
+                    Total rendered = sum(widths) + columnCount * 4
+                    To fit 495pt: sum(widths) = 495 - columnCount * 4
+                    Each fixed width = desired_visual_width - 4.
+                    Target visuals: cb=20, id=30, mass=31, base=62, coeff=29, calc=62, disc=26, final=62
+                #}
+                {% set itemW = 495 - columnCount * 4 %}
+                {% if GET['checkboxes'] %}{% set itemW = itemW - 16 %}{% endif %}
+                {% set itemW = itemW - 30 %}
+                {% if GET['masses'] %}{% set itemW = itemW - 27 %}{% endif %}
+                {% if project.projectsTypes_config_finance == 1 %}{% set itemW = itemW - 173 %}{% endif %}
+
                 {% if GET['assets'] and project.projectsTypes_config_assets == 1 %}
-                    { text: "Equipment", style: { fontSize: 18, bold: true }, margin: [ 0, 5, 0, 0 ] },
-                    
-                    {% set columnCount = 2 %}
-                    {% if GET['checkboxes'] %}{% set columnCount = columnCount + 1 %}{% endif %}
-                    {% if GET['masses'] %}{% set columnCount = columnCount + 1 %}{% endif %}
-                    {% if project.projectsTypes_config_finance == 1 %}{% set columnCount = columnCount + 5 %}{% endif %}
-
-                    {#
-                        pdfmake treats widths as CONTENT widths; padding is added on top.
-                        Custom layout below uses 2pt each side = 4pt overhead per column.
-                        Total rendered = sum(widths) + columnCount * 4
-                        To fit 495pt: sum(widths) = 495 - columnCount * 4
-                        Each fixed width = desired_visual_width - 4.
-                        Target visuals: cb=20, id=30, mass=31, base=62, coeff=29, calc=62, disc=26, final=62
-                    #}
-                    {% set itemW = 495 - columnCount * 4 %}
-                    {% if GET['checkboxes'] %}{% set itemW = itemW - 16 %}{% endif %}
-                    {% set itemW = itemW - 30 %}
-                    {% if GET['masses'] %}{% set itemW = itemW - 27 %}{% endif %}
-                    {% if project.projectsTypes_config_finance == 1 %}{% set itemW = itemW - 173 %}{% endif %}
-
                     {% set allAssets = FINANCIALS.assetsAssigned %}
                     {% for instance in FINANCIALS.assetsAssignedSUB %}
                         {% set allAssets = allAssets|merge(instance['assets']) %}
@@ -244,9 +244,98 @@
                             margin: [ 0, 10, 0, 10 ]
                         },
                     {% endif %}
+                    { text: "{{ allAssets|length }} Total Item{{ allAssets|length != 1 ? 's' }}", style: { fontSize: 9, bold: true, alignment: 'right' } },
+                {% endif %}
+                {% set showSubHires = FINANCIALS.payments.subHire.ledger|length > 0 and project.projectsTypes_config_finance == 1 and GET['subHires'] %}
+                {% set showSales = FINANCIALS.payments.sales.ledger|length > 0 and project.projectsTypes_config_finance == 1 and GET['sales'] %}
+                {% set showStaff = FINANCIALS.payments.staff.ledger|length > 0 and project.projectsTypes_config_finance == 1 and GET['staff'] %}
+                {% if showSubHires or showSales or showStaff %}
+                    {
+                        table: {
+                            headerRows: 1,
+                            widths: [
+                                {% if GET['checkboxes'] %}16,{% endif %}
+                                30,
+                                {{ itemW }},
+                                {% if GET['masses'] %}27,{% endif %}
+                                {% if project.projectsTypes_config_finance == 1 %}
+                                    42, 25, 42, 25, 42,
+                                {% endif %}
+                            ],
+                            body: [
+                                [
+                                    {% if GET['checkboxes'] %}{ text: '' },{% endif %}
+                                    { text: '' },
+                                    { text: 'Item', style: { bold: true } },
+                                    {% if GET['masses'] %}{ text: '' },{% endif %}
+                                    {% if project.projectsTypes_config_finance == 1 %}
+                                        { stack: [{ text: 'Base', bold: true }, { text: '{{ moneySymbol() }}' }], alignment: 'right' },
+                                        { text: 'Qty', style: { bold: true, alignment: 'right' } },
+                                        { text: '' },
+                                        { text: '' },
+                                        { stack: [{ text: 'Final', bold: true }, { text: '{{ moneySymbol() }}' }], alignment: 'right' },
+                                    {% endif %}
+                                ],
+                                {% for group in [
+                                    { show: showSubHires, label: "Additional Hire Items", ledger: FINANCIALS.payments.subHire.ledger },
+                                    { show: showSales, label: "Sales", ledger: FINANCIALS.payments.sales.ledger },
+                                    { show: showStaff, label: "Staff", ledger: FINANCIALS.payments.staff.ledger }
+                                ] %}
+                                    {% if group.show %}
+                                        [{
+                                            text: "{{ group.label|escape("js") }}",
+                                            style: { bold: true },
+                                            fillColor: '#F5F5F5',
+                                            colSpan: {{ columnCount }},
+                                            margin: 3
+                                        },
+                                        {% for i in range(2, columnCount) %}{},{% endfor %}
+                                        ],
+                                        {% for payment in group.ledger %}
+                                        [
+                                            {% if GET['checkboxes'] %}{ text: '' },{% endif %}
+                                            { text: '' },
+                                            {
+                                                stack: [
+                                                    { text: "{{ payment.payments_supplier|escape("js") }}" },
+                                                    { text: "{{ payment.payments_comment|escape("js") }}", color: '#595959', margin: [0, 2, 0, 0] }
+                                                ]
+                                            },
+                                            {% if GET['masses'] %}{ text: '' },{% endif %}
+                                            {% if project.projectsTypes_config_finance == 1 %}
+                                                { text: "{% if GET['prices'] %}{{ payment.payments_amount|money|escape("js") }}{% endif %}", style: { alignment: 'right' } },
+                                                { text: "{{ payment.payments_quantity|escape("js") }}x", style: { alignment: 'right' } },
+                                                { text: '' },
+                                                { text: '' },
+                                                { text: "{% if GET['prices'] %}{{ payment.payments_amountTotal|money|escape("js") }}{% endif %}", style: { alignment: 'right' } },
+                                            {% endif %}
+                                        ],
+                                        {% endfor %}
+                                    {% endif %}
+                                {% endfor %}
+                            ],
+                        },
+                        layout: {
+                            hLineWidth: function(i, node) {
+                                if (i === 0 || i === node.table.body.length) return 0;
+                                if (i === 1) return 1;
+                                return 0.5;
+                            },
+                            vLineWidth: function() { return 0; },
+                            hLineColor: function(i) { return i === 1 ? 'black' : '#aaaaaa'; },
+                            paddingLeft: function() { return 2; },
+                            paddingRight: function() { return 2; },
+                            paddingTop: function() { return 2; },
+                            paddingBottom: function() { return 2; }
+                        },
+                        margin: [ 0, 10, 0, 10 ]
+                    },
+                {% endif %}
+                {% if GET['assets'] and project.projectsTypes_config_assets == 1 %}
                     {% if GET['flagsBlocks'] %}{ text: "[F] indicates asset flagged, [B] indicates asset blocked" },{% endif %}
                     { text: "[L] indicates asset linked to another" },
-                    { text: "{{ allAssets|length }} Total Item{{ allAssets|length != 1 ? 's' }}", style: { fontSize: 14, bold: true, alignment: 'right' } },
+                    { text: " " },
+                    { text: " " },
                 {% endif %}
                 {% if GET['finance'] and "PROJECTS:PROJECT_PAYMENTS:VIEW"|instancePermissions and project.projectsTypes_config_finance == 1 %}
                 {
@@ -296,179 +385,13 @@
                     layout: 'noBorders',
                 },
                 {% endif %}
-                {% if FINANCIALS.payments.subHire.ledger|length > 0 and project.projectsTypes_config_finance == 1 and GET['subHires']  %}
-                    { text: "Additional Hire Items", style: { fontSize: 18, bold: true }, pageBreak: 'before' },
-                    { 
-                        table: {
-                            widths: ['auto', '*'{% if GET['prices'] %},'auto','auto'{% endif %}],
-                            body: [
-                                {% set currentSupplier = "" %}
-                                {% for payment in FINANCIALS.payments.subHire.ledger %}
-                                {% if currentSupplier != payment.payments_supplier %}
-                                    {% set currentSupplier = payment.payments_supplier %}
-                                    [{ 
-                                        text: "{{ payment.payments_supplier|escape("js") }}", 
-                                        style: { bold: true },
-                                        fillColor: '#F5F5F5',
-                                        colSpan: {{ GET['prices'] ? 4 : 2 }},
-                                        margin: 3
-                                    },
-                                    {% for i in range(2, (GET['prices'] ? 4 : 2)) %}{},{% endfor %}
-                                    ],
-                                {% endif %}
-                                [
-                                    "{{ payment.payments_quantity > 1 ? payment.payments_quantity ~ "x" : "" }}",
-                                    "{{ payment.payments_comment|escape("js") }}",
-                                    {% if GET['prices'] %}
-                                        {
-                                            text: "{{ payment.payments_amount|money|escape("js") }}",
-                                            style: {alignment: 'right'}
-                                        },
-                                        {
-                                            text: "{{ payment.payments_amountTotal|money|escape("js") }}",
-                                            style: {alignment: 'right'}
-                                        },
-                                    {% endif %}
-                                ],
-                                {% endfor %}
-                            ],
-                        },
-                        layout: 'noBorders',
-                        margin: [ 0, 10, 0, 10 ]
-                    },
-                    {% if GET['prices'] %}
-                    {
-                        columns: [
-                            {
-                                width: '*',
-                                text: 'Total: ',
-                                style: { bold: true, alignment: 'right' },
-                                margin: [ 0, 0, 5, 0 ]
-                            },
-                            {
-                                width: 'auto',
-                                text: "{{ FINANCIALS.payments.subHire.total|money|escape("js") }}",
-                            },
-                            
-                        ]
-                    },
-                    {% endif %}
+                {% if project.projects_invoiceNotes|length > 0 and GET['invoiceNotes'] and GET['type'] != 'deliveryNote' %}
+                    { text: "Notes", style: { fontSize: 14, bold: true } },
+                    "{{ project.projects_invoiceNotes|escape("js") }}",
                 {% endif %}
-                {% if FINANCIALS.payments.sales.ledger|length > 0 and project.projectsTypes_config_finance == 1 and GET['sales'] %}
-                    { text: "Sales", style: { fontSize: 18, bold: true } },
-                    { 
-                        table: {
-                            widths: ['auto', '*'{% if GET['prices'] %},'auto','auto'{% endif %}],
-                            body: [
-                                {% set currentSupplier = "" %}
-                                {% for payment in FINANCIALS.payments.sales.ledger %}
-                                {% if currentSupplier != payment.payments_supplier %}
-                                    {% set currentSupplier = payment.payments_supplier %}
-                                    [{ 
-                                        text: "{{ payment.payments_supplier|escape("js") }}", 
-                                        style: { bold: true },
-                                        fillColor: '#F5F5F5',
-                                        colSpan: {{ GET['prices'] ? 4 : 2 }},
-                                        margin: 3
-                                    },
-                                    {% for i in range(2, (GET['prices'] ? 4 : 2)) %}{},{% endfor %}
-                                    ],
-                                {% endif %}
-                                [
-                                    "{{ payment.payments_quantity > 1 ? payment.payments_quantity ~ "x" : "" }}",
-                                    "{{ payment.payments_comment|escape("js") }}",
-                                    {% if GET['prices'] %}
-                                        {
-                                            text: "{{ payment.payments_amount|money|escape("js") }}",
-                                            style: {alignment: 'right'}
-                                        },
-                                        {
-                                            text: "{{ payment.payments_amountTotal|money|escape("js") }}",
-                                            style: {alignment: 'right'}
-                                        },
-                                    {% endif %}
-                                ],
-                                {% endfor %}
-                            ],
-                        },
-                        layout: 'noBorders',
-                        margin: [ 0, 10, 0, 10 ]
-                    },
-                    {% if GET['prices'] %}
-                    {
-                        columns: [
-                            {
-                                width: '*',
-                                text: 'Total: ',
-                                style: { bold: true, alignment: 'right' },
-                                margin: [ 0, 0, 5, 0 ]
-                            },
-                            {
-                                width: 'auto',
-                                text: "{{ FINANCIALS.payments.sales.total|money|escape("js") }}",
-                            },
-                            
-                        ]
-                    },
-                    {% endif %}
-                {% endif %}
-                {% if project.projectsTypes_config_finance == 1 and FINANCIALS.payments.staff.ledger|length > 0 and GET['staff'] %}
-                    { text: "Staff", style: { fontSize: 18, bold: true } },
-                    { 
-                        table: {
-                            widths: ['auto', '*'{% if GET['prices'] %},'auto','auto'{% endif %}],
-                            body: [
-                                {% set currentSupplier = "" %}
-                                {% for payment in FINANCIALS.payments.staff.ledger %}
-                                {% if currentSupplier != payment.payments_supplier %}
-                                    {% set currentSupplier = payment.payments_supplier %}
-                                    [{ 
-                                        text: "{{ payment.payments_supplier|escape("js") }}", 
-                                        style: { bold: true },
-                                        fillColor: '#F5F5F5',
-                                        colSpan: {{ GET['prices'] ? 4 : 2 }},
-                                        margin: 3
-                                    },
-                                    {% for i in range(2, (GET['prices'] ? 4 : 2)) %}{},{% endfor %}
-                                    ],
-                                {% endif %}
-                                [
-                                    "{{ payment.payments_quantity > 1 ? payment.payments_quantity ~ "x" : "" }}",
-                                    "{{ payment.payments_comment|escape("js") }}",
-                                    {% if GET['prices'] %}
-                                        {
-                                            text: "{{ payment.payments_amount|money|escape("js") }}",
-                                            style: {alignment: 'right'}
-                                        },
-                                        {
-                                            text: "{{ payment.payments_amountTotal|money|escape("js") }}",
-                                            style: {alignment: 'right'}
-                                        },
-                                    {% endif %}
-                                ],
-                                {% endfor %}
-                            ],
-                        },
-                        layout: 'noBorders',
-                        margin: [ 0, 10, 0, 10 ]
-                    },
-                    {% if GET['prices'] %}
-                    {
-                        columns: [
-                            {
-                                width: '*',
-                                text: 'Total: ',
-                                style: { bold: true, alignment: 'right' },
-                                margin: [ 0, 0, 5, 0 ]
-                            },
-                            {
-                                width: 'auto',
-                                text: "{{ FINANCIALS.payments.staff.total|money|escape("js") }}",
-                            },
-                            
-                        ]
-                    },
-                    {% endif %}
+                {% if project.projects_deliveryNotes|length > 0 and GET['type'] == 'deliveryNote' %}
+                    { text: "Delivery Notes", style: { fontSize: 14, bold: true }, margin: [ 0, 20, 0, 0 ] },
+                    "{{ project.projects_deliveryNotes|escape("js") }}",
                 {% endif %}
                 {% if GET['paymentTerms'] %}
                 {

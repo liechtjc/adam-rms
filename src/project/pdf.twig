@@ -303,11 +303,11 @@
                                             },
                                             {% if GET['masses'] %}{ text: '' },{% endif %}
                                             {% if project.projectsTypes_config_finance == 1 %}
-                                                { text: "{% if GET['prices'] %}{{ payment.payments_amount|money|escape("js") }}{% endif %}", style: { alignment: 'right' } },
-                                                { text: "{{ payment.payments_quantity|escape("js") }}x", style: { alignment: 'right' } },
+                                                { text: "{% if GET['prices'] %}{{ payment.payments_amount|moneyDecimal|escape("js") }}{% endif %}", style: { alignment: 'right' } },
+                                                { text: "{{ payment.payments_quantity|escape("js") }}", style: { alignment: 'right' } },
                                                 { text: '' },
                                                 { text: '' },
-                                                { text: "{% if GET['prices'] %}{{ payment.payments_amountTotal|money|escape("js") }}{% endif %}", style: { alignment: 'right' } },
+                                                { text: "{% if GET['prices'] %}{{ payment.payments_amountTotal|moneyDecimal|escape("js") }}{% endif %}", style: { alignment: 'right' } },
                                             {% endif %}
                                         ],
                                         {% endfor %}

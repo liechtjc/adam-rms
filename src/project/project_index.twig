@@ -517,6 +517,73 @@
     </div>
     </div>
     {% endif %}
+    {% if "PROJECTS:EDIT:INSURANCE"|instancePermissions %}
+    <div class="modal fade" id="insuranceModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Insurance</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="insuranceModal-form">
+                    <input type="hidden" name="projects_id" value="{{ project.projects_id }}"/>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">Rate %</span>
+                        </div>
+                        <input class="form-control" type="number" step="0.01" min="0" name="projects_insurance_rate" value="{{ FINANCIALS.insurance.rate }}">
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">Fixed Amount {{ moneySymbol() }}</span>
+                        </div>
+                        <input class="form-control" type="number" step="0.01" min="0" name="projects_insurance_amount" placeholder="Leave blank to use the rate" value="{% if FINANCIALS.insurance.amount %}{{ FINANCIALS.insurance.amount|moneyDecimal }}{% endif %}">
+                    </div>
+                    <small class="form-text text-muted">Insurance is calculated as a percentage of the Equipment SubTotal (before discount), unless a fixed amount is entered above.</small>
+                </form>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="insuranceModal-button">Save changes</button>
+            </div>
+        </div>
+    </div>
+    </div>
+    {% endif %}
+    {% if "PROJECTS:EDIT:VAT"|instancePermissions %}
+    <div class="modal fade" id="vatModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">VAT</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="vatModal-form">
+                    <input type="hidden" name="projects_id" value="{{ project.projects_id }}"/>
+                    <p>
+                        This project is subject to VAT at {{ FINANCIALS.vat.instanceRate }}%.
+                        {% if FINANCIALS.vat.isExport %}It is currently marked as an <b>Export</b>, so 0% VAT is applied.{% endif %}
+                    </p>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="projects_vat_export" id="vatModal-form-export" {% if FINANCIALS.vat.isExport %}checked{% endif %}>
+                        <label class="form-check-label" for="vatModal-form-export">Mark as Export (0% VAT)</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="vatModal-button">Save changes</button>
+            </div>
+        </div>
+    </div>
+    </div>
+    {% endif %}
     {% if "PROJECTS:PROJECT_NOTES:EDIT:NOTES"|instancePermissions and project.projectsTypes_config_notes == 1 %}
         {% for note in project.notes %}
             <div class="modal fade" id="noteModal{{ note.projectsNotes_id }}">
@@ -795,6 +862,14 @@
                                         <label class="form-check-label">Equipment Discounts</label>
                                     </div>
                                 {% endif %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="insurance" checked>
+                                    <label class="form-check-label">Insurance</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="vat" checked>
+                                    <label class="form-check-label">VAT</label>
+                                </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="subHires">
                                     <label class="form-check-label">Additional Hires</label>
@@ -1434,6 +1509,29 @@
                             });
                         }
                     }
+                });
+            });
+            {% endif %}
+            {% if "PROJECTS:EDIT:INSURANCE"|instancePermissions %}
+            $(".openInsuranceModal").click(function () {
+                $("#insuranceModal").modal('show');
+            });
+            $("#insuranceModal-button").click(function () {
+                var formData = $("#insuranceModal-form").serializeArray();
+                ajaxcall("projects/setInsurance.php", {formData}, function (data) {
+                    location.reload();
+                });
+            });
+            {% endif %}
+            {% if "PROJECTS:EDIT:VAT"|instancePermissions %}
+            $(".openVatModal").click(function () {
+                $("#vatModal").modal('show');
+            });
+            $("#vatModal-button").click(function () {
+                var formData = $("#vatModal-form").serializeArray();
+                formData.push({name: "projects_vat_export", value: $("#vatModal-form-export").is(":checked") ? 1 : 0});
+                ajaxcall("projects/setVat.php", {formData}, function (data) {
+                    location.reload();
                 });
             });
             {% endif %}

@@ -828,9 +828,9 @@
                  if ($(e.relatedTarget).data('delivery-note')){
                     $("#pdfGenerateModal .modal-title").text("Create Delivery Note");
                     $('#pdfGenerateModal input[name="type"]').val("deliveryNote");
-                    $('#pdfGenerateModal input[name="finance"]').prop('checked', false).parent().hide();
-                    $('#pdfGenerateModal input[name="prices"]').prop('checked', false).parent().hide();
-                    $('#pdfGenerateModal input[name="discounts"]').prop('checked', false).parent().hide();
+                    $('#pdfGenerateModal input[name="finance"]').prop('checked', true).parent().show();
+                    $('#pdfGenerateModal input[name="prices"]').prop('checked', true).parent().show();
+                    $('#pdfGenerateModal input[name="discounts"]').prop('checked', true).parent().show();
                     $('#pdfGenerateModal input[name="flagsBlocks"]').prop('checked', false).parent().hide();
                 } else {
                     $('#pdfGenerateModal input[name="finance"]').prop('checked', true).parent().show();

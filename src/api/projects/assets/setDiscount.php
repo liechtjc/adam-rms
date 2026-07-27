@@ -25,21 +25,24 @@ foreach ($assignmentsSetDiscount["assignments"] as $assignment) {
     else {
         $bCMS->auditLog("EDIT-DISCOUNT", "assetsAssignments", $assignment['assetsAssignments_id'], $AUTH->data['users_userid'],null, $assignment['projects_id']);
 
-        if ($assignment['assetsAssignments_customPrice'] > 0) {
-            $price = new Money($assignment['assetsAssignments_customPrice'], new Currency($AUTH->data['instance']['instances_config_currency']));
-        } else {
-            $price = new Money(null, new Currency($AUTH->data['instance']['instances_config_currency']));
-            $price = $price->add((new Money(($assignment['assets_dayRate'] !== null ? $assignment['assets_dayRate'] : $assignment['assetTypes_dayRate']), new Currency($AUTH->data['instance']['instances_config_currency'])))->multiply($priceMaths['days']));
-            $price = $price->add((new Money(($assignment['assets_weekRate'] !== null ? $assignment['assets_weekRate'] : $assignment['assetTypes_weekRate']), new Currency($AUTH->data['instance']['instances_config_currency'])))->multiply($priceMaths['weeks']));
-        }
+        //Linked assets are purely descriptive - they don't contribute to project totals
+        if ($assignment['assetsAssignments_linkedTo'] === null) {
+            if ($assignment['assetsAssignments_customPrice'] > 0) {
+                $price = new Money($assignment['assetsAssignments_customPrice'], new Currency($AUTH->data['instance']['instances_config_currency']));
+            } else {
+                $price = new Money(null, new Currency($AUTH->data['instance']['instances_config_currency']));
+                $price = $price->add((new Money(($assignment['assets_dayRate'] !== null ? $assignment['assets_dayRate'] : $assignment['assetTypes_dayRate']), new Currency($AUTH->data['instance']['instances_config_currency'])))->multiply($priceMaths['days']));
+                $price = $price->add((new Money(($assignment['assets_weekRate'] !== null ? $assignment['assets_weekRate'] : $assignment['assetTypes_weekRate']), new Currency($AUTH->data['instance']['instances_config_currency'])))->multiply($priceMaths['weeks']));
+            }
 
-        if ($assignment['assetsAssignments_discount'] > 0) {
-            //If there was already a discount, remove it
-            $projectFinanceCacher->adjust('projectsFinanceCache_equiptmentDiscounts', $price->subtract($price->multiply(1 - ($assignment['assetsAssignments_discount'] / 100))),true);
-        }
-        if ($_POST['assetsAssignments_discount'] > 0) {
-            //If there is now a discount, set it up
-            $projectFinanceCacher->adjust('projectsFinanceCache_equiptmentDiscounts', $price->subtract($price->multiply(1 - ($_POST['assetsAssignments_discount'] / 100))),false);
+            if ($assignment['assetsAssignments_discount'] > 0) {
+                //If there was already a discount, remove it
+                $projectFinanceCacher->adjust('projectsFinanceCache_equiptmentDiscounts', $price->subtract($price->multiply(1 - ($assignment['assetsAssignments_discount'] / 100))),true);
+            }
+            if ($_POST['assetsAssignments_discount'] > 0) {
+                //If there is now a discount, set it up
+                $projectFinanceCacher->adjust('projectsFinanceCache_equiptmentDiscounts', $price->subtract($price->multiply(1 - ($_POST['assetsAssignments_discount'] / 100))),false);
+            }
         }
     }
 }

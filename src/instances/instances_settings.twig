@@ -49,6 +49,11 @@
                             <label>Website</label>
                             <input required type="url" class="form-control" value="{{ USERDATA.instance.instances_website }}" name="instances_website">
                         </div>
+                        <div class="form-group">
+                            <label>VAT Rate %</label>
+                            <input required type="number" step="0.01" min="0" class="form-control" value="{{ USERDATA.instance.instances_config_vatRate }}" name="instances_config_vatRate">
+                            <small class="form-text text-muted">Applied to every project by default (unless marked as an Export). Individual projects cannot override this rate.</small>
+                        </div>
                 </div>
                 <div class="card-footer">
                     {% if "BUSINESS:BUSINESS_SETTINGS:EDIT"|instancePermissions %}

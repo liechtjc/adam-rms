@@ -208,8 +208,27 @@ function projectFinancials($project) {
         }
     }
 
-    $return['payments']['subTotal'] = $return['prices']['total']->add($return['payments']['sales']['total'],$return['payments']['subHire']['total'],$return['payments']['staff']['total']);
-    $return['payments']['total'] = $return['payments']['subTotal']->subtract($return['payments']['received']['total']);
+    //Insurance - a percentage of the equipment subtotal (pre-discount), or a fixed amount if one is set
+    $return['insurance'] = [
+        "rate" => $project['projects_insurance_rate'],
+        "amount" => $project['projects_insurance_amount'],
+    ];
+    $return['insurance']['total'] = ($project['projects_insurance_amount'] !== null && $project['projects_insurance_amount'] != 0)
+        ? new Money($project['projects_insurance_amount'], new Currency($AUTH->data['instance']['instances_config_currency']))
+        : $return['prices']['subTotal']->multiply($project['projects_insurance_rate'] / 100);
+
+    $return['payments']['subTotal'] = $return['prices']['total']->add($return['payments']['sales']['total'],$return['payments']['subHire']['total'],$return['payments']['staff']['total'],$return['insurance']['total']);
+
+    //VAT - applies to every project at the instance rate, unless the project is marked as an Export
+    $return['vat'] = [
+        "isExport" => (bool)$project['projects_vat_export'],
+        "instanceRate" => $AUTH->data['instance']['instances_config_vatRate'],
+        "rate" => $project['projects_vat_export'] ? 0.0 : $AUTH->data['instance']['instances_config_vatRate'],
+    ];
+    $return['vat']['total'] = $return['payments']['subTotal']->multiply($return['vat']['rate'] / 100);
+
+    $return['payments']['grandTotal'] = $return['payments']['subTotal']->add($return['vat']['total']);
+    $return['payments']['total'] = $return['payments']['grandTotal']->subtract($return['payments']['received']['total']);
 
     //add formatted values to everything
     $return['formattedValue'] = $moneyFormatter->format($return['value']);
@@ -219,13 +238,17 @@ function projectFinancials($project) {
     foreach ($return['payments'] as $key => $value) {
         if ($key == "subTotal") {
             $return['payments']['formattedSubTotal'] = $moneyFormatter->format($return['payments']["subTotal"]);
+        } elseif ($key == "grandTotal") {
+            $return['payments']['formattedGrandTotal'] = $moneyFormatter->format($return['payments']["grandTotal"]);
         } elseif ($key == "total"){
             $return['payments']['formattedTotal'] = $moneyFormatter->format($return['payments']["total"]);
         } else {
             $return['payments'][$key]['formattedTotal'] = $moneyFormatter->format($return['payments'][$key]['total']);
         }
     }
-    
+    $return['formattedInsurance'] = $moneyFormatter->format($return['insurance']['total']);
+    $return['formattedVat'] = $moneyFormatter->format($return['vat']['total']);
+
     return $return;
 }
 $PAGEDATA['FINANCIALS'] = projectFinancials($PAGEDATA['project']);
@@ -245,6 +268,8 @@ if (!$projectFinanceCache) {
         "projectsFinanceCache_staffTotal" =>$PAGEDATA['FINANCIALS']['payments']['staff']['total']->getAmount(),
         "projectsFinanceCache_externalHiresTotal" => $PAGEDATA['FINANCIALS']['payments']['subHire']['total']->getAmount(),
         "projectsFinanceCache_paymentsReceived" =>$PAGEDATA['FINANCIALS']['payments']['received']['total']->getAmount(),
+        "projectsFinanceCache_insuranceTotal" =>$PAGEDATA['FINANCIALS']['insurance']['total']->getAmount(),
+        "projectsFinanceCache_vatTotal" =>$PAGEDATA['FINANCIALS']['vat']['total']->getAmount(),
         "projectsFinanceCache_grandTotal" =>$PAGEDATA['FINANCIALS']['payments']['total']->getAmount(),
         "projectsFinanceCache_mass"=>$PAGEDATA['FINANCIALS']['mass'],
         "projectsFinanceCache_value"=>$PAGEDATA['FINANCIALS']['value']->getAmount(),
@@ -258,6 +283,8 @@ elseif ($projectFinanceCache["projectsFinanceCache_salesTotal"] != $PAGEDATA['FI
 elseif ($projectFinanceCache["projectsFinanceCache_staffTotal"] != $PAGEDATA['FINANCIALS']['payments']['staff']['total']->getAmount()) $projectFinancesCacheMismatch = true;
 elseif ($projectFinanceCache["projectsFinanceCache_externalHiresTotal"] !=  $PAGEDATA['FINANCIALS']['payments']['subHire']['total']->getAmount()) $projectFinancesCacheMismatch = true;
 elseif ($projectFinanceCache["projectsFinanceCache_paymentsReceived"] != $PAGEDATA['FINANCIALS']['payments']['received']['total']->getAmount()) $projectFinancesCacheMismatch = true;
+elseif ($projectFinanceCache["projectsFinanceCache_insuranceTotal"] != $PAGEDATA['FINANCIALS']['insurance']['total']->getAmount()) $projectFinancesCacheMismatch = true;
+elseif ($projectFinanceCache["projectsFinanceCache_vatTotal"] != $PAGEDATA['FINANCIALS']['vat']['total']->getAmount()) $projectFinancesCacheMismatch = true;
 elseif ($projectFinanceCache["projectsFinanceCache_grandTotal"] != $PAGEDATA['FINANCIALS']['payments']['total']->getAmount()) $projectFinancesCacheMismatch = true;
 elseif ($projectFinanceCache["projectsFinanceCache_value"] != $PAGEDATA['FINANCIALS']['value']->getAmount()) $projectFinancesCacheMismatch = true;
 elseif (round($projectFinanceCache["projectsFinanceCache_mass"]*100000) != round($PAGEDATA['FINANCIALS']['mass']*100000)) $projectFinancesCacheMismatch = true;
@@ -274,6 +301,8 @@ if ($projectFinancesCacheMismatch) {
         "projectsFinanceCache_staffTotal" =>$PAGEDATA['FINANCIALS']['payments']['staff']['total']->getAmount(),
         "projectsFinanceCache_externalHiresTotal" => $PAGEDATA['FINANCIALS']['payments']['subHire']['total']->getAmount(),
         "projectsFinanceCache_paymentsReceived" =>$PAGEDATA['FINANCIALS']['payments']['received']['total']->getAmount(),
+        "projectsFinanceCache_insuranceTotal" =>$PAGEDATA['FINANCIALS']['insurance']['total']->getAmount(),
+        "projectsFinanceCache_vatTotal" =>$PAGEDATA['FINANCIALS']['vat']['total']->getAmount(),
         "projectsFinanceCache_grandTotal" =>$PAGEDATA['FINANCIALS']['payments']['total']->getAmount(),
         "projectsFinanceCache_mass"=>$PAGEDATA['FINANCIALS']['mass'],
         "projectsFinanceCache_value"=>$PAGEDATA['FINANCIALS']['value']->getAmount(),

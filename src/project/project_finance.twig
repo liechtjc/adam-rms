@@ -50,6 +50,16 @@
 							{{ FINANCIALS.payments.subHire.total|money }}
 						</td>
 					</tr>
+					<tr>
+						<td style="width: 35%;"></td>
+						<td style="width: 15%;text-align: right;"></td>
+						<td style="width: 35%;">
+							Insurance
+						</td>
+						<td style="width: 15%;text-align: right;">
+							{{ FINANCIALS.insurance.total|money }}
+						</td>
+					</tr>
 					<tr style="background-color: rgba(0,0,0,.03);">
                         <td style="width: 35%;"></td>
 						<td style="width: 15%;text-align: right;"></td>
@@ -58,6 +68,26 @@
 						</td>
 						<td style="width: 15%;text-align: right;">
 							{{ FINANCIALS.payments.subTotal|money }}
+						</td>
+					</tr>
+					<tr>
+						<td style="width: 35%;"></td>
+						<td style="width: 15%;text-align: right;"></td>
+						<td style="width: 35%;">
+							VAT{% if FINANCIALS.vat.isExport %} (Export){% endif %}
+						</td>
+						<td style="width: 15%;text-align: right;">
+							{{ FINANCIALS.vat.total|money }}
+						</td>
+					</tr>
+					<tr style="background-color: rgba(0,0,0,.03);">
+                        <td style="width: 35%;"></td>
+						<td style="width: 15%;text-align: right;"></td>
+						<td style="width: 35%;">
+							<b>Grand Total</b>
+						</td>
+						<td style="width: 15%;text-align: right;">
+							{{ FINANCIALS.payments.grandTotal|money }}
 						</td>
 					</tr>
                     <tr>
@@ -96,6 +126,12 @@
 								<a class="dropdown-item newPayment" data-type="4" href="#">Add Staff Cost</a>
 							</div>
 						</button>
+					{% endif %}
+					{% if "PROJECTS:EDIT:INSURANCE"|instancePermissions %}
+						<button type="button" class="btn btn-default openInsuranceModal">{% if FINANCIALS.insurance.amount or FINANCIALS.insurance.rate != 10 %}Edit Insurance{% else %}Add Insurance{% endif %}</button>
+					{% endif %}
+					{% if "PROJECTS:EDIT:VAT"|instancePermissions %}
+						<button type="button" class="btn btn-default openVatModal">Display VAT</button>
 					{% endif %}
 				</div>
 			</div>

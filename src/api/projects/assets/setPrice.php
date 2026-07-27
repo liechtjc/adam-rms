@@ -31,31 +31,34 @@ foreach ($assignmentsSetDiscount["assignments"] as $assignment) {
     else {
         $bCMS->auditLog("EDIT-DISCOUNT", "assetsAssignments", $assignment['assetsAssignments_customPrice'], $AUTH->data['users_userid'],null, $assignment['projects_id']);
 
-        if ($assignment['assetsAssignments_customPrice'] > 0) {
-            $oldPrice = new Money($assignment['assetsAssignments_customPrice'], new Currency($AUTH->data['instance']['instances_config_currency']));
-        } else {
-            $oldPrice = new Money(null, new Currency($AUTH->data['instance']['instances_config_currency']));
-            $oldPrice = $oldPrice->add((new Money(($assignment['assets_dayRate'] !== null ? $assignment['assets_dayRate'] : $assignment['assetTypes_dayRate']), new Currency($AUTH->data['instance']['instances_config_currency'])))->multiply($priceMaths['days']));
-            $oldPrice = $oldPrice->add((new Money(($assignment['assets_weekRate'] !== null ? $assignment['assets_weekRate'] : $assignment['assetTypes_weekRate']), new Currency($AUTH->data['instance']['instances_config_currency'])))->multiply($priceMaths['weeks']));
-        }
-        //Remove the old price
-        $projectFinanceCacher->adjust('projectsFinanceCache_equipmentSubTotal', $oldPrice,true);
+        //Linked assets are purely descriptive - they don't contribute to project totals
+        if ($assignment['assetsAssignments_linkedTo'] === null) {
+            if ($assignment['assetsAssignments_customPrice'] > 0) {
+                $oldPrice = new Money($assignment['assetsAssignments_customPrice'], new Currency($AUTH->data['instance']['instances_config_currency']));
+            } else {
+                $oldPrice = new Money(null, new Currency($AUTH->data['instance']['instances_config_currency']));
+                $oldPrice = $oldPrice->add((new Money(($assignment['assets_dayRate'] !== null ? $assignment['assets_dayRate'] : $assignment['assetTypes_dayRate']), new Currency($AUTH->data['instance']['instances_config_currency'])))->multiply($priceMaths['days']));
+                $oldPrice = $oldPrice->add((new Money(($assignment['assets_weekRate'] !== null ? $assignment['assets_weekRate'] : $assignment['assetTypes_weekRate']), new Currency($AUTH->data['instance']['instances_config_currency'])))->multiply($priceMaths['weeks']));
+            }
+            //Remove the old price
+            $projectFinanceCacher->adjust('projectsFinanceCache_equipmentSubTotal', $oldPrice,true);
 
-        if ($_POST['assetsAssignments_customPrice'] != null) {
-            $price = new Money($_POST['assetsAssignments_customPrice'], new Currency($AUTH->data['instance']['instances_config_currency']));
-        } else {
-            //Price is now manually calculated
-            $price = new Money(null, new Currency($AUTH->data['instance']['instances_config_currency']));
-            $price = $price->add((new Money(($assignment['assets_dayRate'] !== null ? $assignment['assets_dayRate'] : $assignment['assetTypes_dayRate']), new Currency($AUTH->data['instance']['instances_config_currency'])))->multiply($priceMaths['days']));
-            $price = $price->add((new Money(($assignment['assets_weekRate'] !== null ? $assignment['assets_weekRate'] : $assignment['assetTypes_weekRate']), new Currency($AUTH->data['instance']['instances_config_currency'])))->multiply($priceMaths['weeks']));
-        }
-        //Add the new price
-        $projectFinanceCacher->adjust('projectsFinanceCache_equipmentSubTotal', $price, false);
+            if ($_POST['assetsAssignments_customPrice'] != null) {
+                $price = new Money($_POST['assetsAssignments_customPrice'], new Currency($AUTH->data['instance']['instances_config_currency']));
+            } else {
+                //Price is now manually calculated
+                $price = new Money(null, new Currency($AUTH->data['instance']['instances_config_currency']));
+                $price = $price->add((new Money(($assignment['assets_dayRate'] !== null ? $assignment['assets_dayRate'] : $assignment['assetTypes_dayRate']), new Currency($AUTH->data['instance']['instances_config_currency'])))->multiply($priceMaths['days']));
+                $price = $price->add((new Money(($assignment['assets_weekRate'] !== null ? $assignment['assets_weekRate'] : $assignment['assetTypes_weekRate']), new Currency($AUTH->data['instance']['instances_config_currency'])))->multiply($priceMaths['weeks']));
+            }
+            //Add the new price
+            $projectFinanceCacher->adjust('projectsFinanceCache_equipmentSubTotal', $price, false);
 
-        if ($assignment['assetsAssignments_discount'] > 0) {
-            //If there was already a discount, remove it, then add it again
-            $projectFinanceCacher->adjust('projectsFinanceCache_equiptmentDiscounts', $oldPrice->subtract($oldPrice->multiply(1 - ($assignment['assetsAssignments_discount'] / 100))),true);
-            $projectFinanceCacher->adjust('projectsFinanceCache_equiptmentDiscounts', $price->subtract($price->multiply(1 - ($assignment['assetsAssignments_discount'] / 100))), false);
+            if ($assignment['assetsAssignments_discount'] > 0) {
+                //If there was already a discount, remove it, then add it again
+                $projectFinanceCacher->adjust('projectsFinanceCache_equiptmentDiscounts', $oldPrice->subtract($oldPrice->multiply(1 - ($assignment['assetsAssignments_discount'] / 100))),true);
+                $projectFinanceCacher->adjust('projectsFinanceCache_equiptmentDiscounts', $price->subtract($price->multiply(1 - ($assignment['assetsAssignments_discount'] / 100))), false);
+            }
         }
     }
 }

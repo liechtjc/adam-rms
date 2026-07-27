@@ -14,7 +14,7 @@ if (isset($array['instances_quoteTerms'])) $array['instances_quoteTerms'] = $bCM
 if (isset($array['instances_deliveryNoteTerms'])) $array['instances_deliveryNoteTerms'] = $bCMS->cleanString($array['instances_deliveryNoteTerms']);
 
 $DBLIB->where("instances_id",$AUTH->data['instance']["instances_id"]);
-$result = $DBLIB->update("instances", array_intersect_key( $array, array_flip( ["instances_name","instances_address","instances_phone","instances_email","instances_website","instances_weekStartDates","instances_logo","instances_emailHeader","instances_termsAndPayment", "instances_quoteTerms", "instances_deliveryNoteTerms", "instances_cableColours"] ) ));
+$result = $DBLIB->update("instances", array_intersect_key( $array, array_flip( ["instances_name","instances_address","instances_phone","instances_email","instances_website","instances_weekStartDates","instances_logo","instances_emailHeader","instances_termsAndPayment", "instances_quoteTerms", "instances_deliveryNoteTerms", "instances_cableColours", "instances_config_vatRate"] ) ));
 echo $DBLIB->getLastError();
 if (!$result) finish(false, ["code" => "UPDATE-FAIL", "message"=> "Could not update instance"]);
 else {
@@ -98,9 +98,14 @@ Requires Instance Permission BUSINESS:BUSINESS_SETTINGS:EDIT
  *                 description="The instance website",
  *             ),
  *             @OA\Property(
- *                 property="instances_weekStartDates", 
- *                 type="string", 
+ *                 property="instances_weekStartDates",
+ *                 type="string",
  *                 description="When the Instance's calendar start dates are",
+ *             ),
+ *             @OA\Property(
+ *                 property="instances_config_vatRate",
+ *                 type="number",
+ *                 description="The VAT rate (percentage) applied to projects by default",
  *             ),
  *             @OA\Property(
  *                 property="instances_logo", 

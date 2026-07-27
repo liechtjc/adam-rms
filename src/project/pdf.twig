@@ -360,6 +360,14 @@
                                 { text: "Equipment Total", style: { bold: true } },
                                 { text: "{{ FINANCIALS.prices.total|money|escape("js") }}", style: { alignment: 'right' } },
                             ],
+                            {% if GET['insurance'] %}
+                            [
+                                { text: "" },
+                                { text: "" },
+                                { text: "Insurance" },
+                                { text: "{{ FINANCIALS.insurance.total|money|escape("js") }}", style: { alignment: 'right' } },
+                            ],
+                            {% endif %}
                             {% if GET['type'] == "invoice" %}
                             [
                                 { text: "" },
@@ -367,6 +375,16 @@
                                 { text: "SubTotal", style: { bold: true } },
                                 { text: "{{ FINANCIALS.payments.subTotal|money|escape("js") }}", style: { alignment: 'right' } },
                             ],
+                            {% endif %}
+                            {% if GET['vat'] %}
+                            [
+                                { text: "" },
+                                { text: "" },
+                                { text: "VAT{% if FINANCIALS.vat.isExport %} (Export){% endif %}" },
+                                { text: "{{ FINANCIALS.vat.total|money|escape("js") }}", style: { alignment: 'right' } },
+                            ],
+                            {% endif %}
+                            {% if GET['type'] == "invoice" %}
                             [
                                 { text: "" },
                                 { text: "" },

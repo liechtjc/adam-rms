@@ -250,5 +250,19 @@
             </div>
         </div>
         {% endif %}
+        {% if "PROJECTS:EXPORT:FINANCE"|instancePermissions %}
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-primary">
+                <div class="inner">
+                    <h3>Project Finance Export</h3>
+                    <p>Export project stats/outstanding balances, or equipment lines for paying owning entities.</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-file-csv"></i>
+                </div>
+                <a href="{{ CONFIG.ROOTURL }}/instances/configuration/projectFinanceExport.php" class="small-box-footer">Manage Export <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
+        </div>
+        {% endif %}
     </div>
 {% endblock %}

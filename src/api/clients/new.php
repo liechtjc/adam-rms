@@ -1,12 +1,21 @@
 <?php
 require_once __DIR__ . '/../apiHeadSecure.php';
 
-if (!$AUTH->instancePermissionCheck("CLIENTS:CREATE") or !isset($_POST['clients_name'])) die("404");
+if (!$AUTH->instancePermissionCheck("CLIENTS:CREATE") or !isset($_POST['formData'])) die("404");
 
-$client = $DBLIB->insert("clients", [
-    "clients_name" => $_POST['clients_name'],
-    "instances_id" => $AUTH->data['instance']['instances_id'],
-]);
+$array = [];
+foreach ($_POST['formData'] as $item) {
+    $array[$item['name']] = $item['value'];
+}
+
+foreach (["clients_name", "clients_postcode", "clients_city", "clients_country"] as $requiredField) {
+    if (!isset($array[$requiredField]) or strlen(trim($array[$requiredField])) < 1) {
+        finish(false, ["code" => "PARAM-ERROR", "message" => "Name, Postcode, City and Country are required"]);
+    }
+}
+
+$array["instances_id"] = $AUTH->data['instance']['instances_id'];
+$client = $DBLIB->insert("clients", $array);
 if (!$client) finish(false, ["code" => "CREATE-CLIENT-FAIL", "message"=> "Could not create new client"]);
 
 $bCMS->auditLog("INSERT", "clients",null, $AUTH->data['users_userid'],null, $client);

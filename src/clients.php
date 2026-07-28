@@ -2,8 +2,10 @@
 require_once __DIR__ . '/common/headSecure.php';
 use Money\Currency;
 use Money\Money;
+use Symfony\Component\Intl\Countries;
 
 $PAGEDATA['pageConfig'] = ["TITLE" => "Clients", "BREADCRUMB" => false];
+$PAGEDATA['COUNTRIES'] = Countries::getNames('en');
 
 if (!$AUTH->instancePermissionCheck("CLIENTS:VIEW")) die($TWIG->render('404.twig', $PAGEDATA));
 

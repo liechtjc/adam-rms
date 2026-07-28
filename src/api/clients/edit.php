@@ -9,6 +9,12 @@ foreach ($_POST['formData'] as $item) {
 }
 if (strlen($array['clients_id']) <1) finish(false, ["code" => "PARAM-ERROR", "message"=> "No data for action"]);
 
+foreach (["clients_name", "clients_postcode", "clients_city", "clients_country"] as $requiredField) {
+    if (!isset($array[$requiredField]) or strlen(trim($array[$requiredField])) < 1) {
+        finish(false, ["code" => "PARAM-ERROR", "message" => "Name, Postcode, City and Country are required"]);
+    }
+}
+
 $DBLIB->where("instances_id", $AUTH->data['instance']['instances_id']);
 $DBLIB->where("clients_deleted", 0);
 $DBLIB->where("clients_id", $array['clients_id']);

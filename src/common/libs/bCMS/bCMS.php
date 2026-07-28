@@ -327,4 +327,18 @@ class bCMS
       return false;
     return true;
   }
+  function instanceQrBillIsAvailable($instance)
+  {
+    /**
+     * Whether an instance has enough configured (currency + creditor IBAN/address)
+     * to generate a Swiss QR-bill payment slip on its invoices. IBAN validity itself
+     * is checked once, when saved in instances/editInstance.php - this just checks
+     * the required fields are present.
+     */
+    if (($instance['instances_config_currency'] ?? null) !== 'CHF') return false;
+    if (empty($instance['instances_config_qrBillIban'])) return false;
+    if (empty($instance['instances_config_qrBillPostcode'])) return false;
+    if (empty($instance['instances_config_qrBillCity'])) return false;
+    return true;
+  }
 }

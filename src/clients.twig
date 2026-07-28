@@ -43,6 +43,94 @@
                         </form>
                     </div>
                 </div>
+                {% if "CLIENTS:CREATE"|instancePermissions %}
+                <div class="modal fade" id="newClientModal">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">New Client</h4>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <form class="clientNew-form">
+                                    <div class="input-group" style="margin-bottom: 5px;">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">Name</span>
+                                        </div>
+                                        <input type="text" class="form-control" name="clients_name" required>
+                                    </div>
+                                    <div class="input-group" style="margin-bottom: 5px;">
+                                        <div class="input-group-prepend"><span class="input-group-text">Address</span></div>
+                                        <textarea class="form-control" rows="3" name="clients_address" placeholder=""></textarea>
+                                    </div>
+                                    <div class="row" style="margin: 0 0 5px 0;">
+                                        <div class="col-6" style="padding-left: 0;">
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">Postcode</span>
+                                                </div>
+                                                <input type="text" class="form-control" name="clients_postcode" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-6" style="padding-right: 0;">
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">City</span>
+                                                </div>
+                                                <input type="text" class="form-control" name="clients_city" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="input-group" style="margin-bottom: 5px;">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">Country</span>
+                                        </div>
+                                        <select class="form-control" name="clients_country" required>
+                                            {% for code, name in COUNTRIES %}
+                                                <option value="{{ code }}" {% if code == 'CH' %}selected{% endif %}>{{ name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="input-group" style="margin-bottom: 5px;">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">Contact Person</span>
+                                        </div>
+                                        <input type="text" class="form-control" name="clients_contact">
+                                    </div>
+                                    <div class="input-group" style="margin-bottom: 5px;">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">Website</span>
+                                        </div>
+                                        <input type="text" class="form-control" name="clients_website">
+                                    </div>
+                                    <div class="input-group" style="margin-bottom: 5px;">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">Phone</span>
+                                        </div>
+                                        <input type="text" class="form-control" name="clients_phone">
+                                    </div>
+                                    <div class="input-group" style="margin-bottom: 5px;">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">Email</span>
+                                        </div>
+                                        <input type="text" class="form-control" name="clients_email">
+                                    </div>
+                                    <div class="input-group" style="margin-bottom: 5px;">
+                                        <div class="input-group-prepend"><span class="input-group-text">Notes</span></div>
+                                        <textarea class="form-control" rows="3" name="clients_notes" placeholder=""></textarea>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer justify-content-between">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary saveClientNew-button">Create</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
                 <div class="card-body table-responsive p-0">
                     {% if clients|length > 0 %}
                         <table class="table table-head-fixed table-striped" border="0" style="overflow-x: scroll;">
@@ -107,11 +195,45 @@
                                                                 <div class="input-group-prepend">
                                                                     <span class="input-group-text">Name</span>
                                                                 </div>
-                                                                <input type="text" class="form-control" name="clients_name" value="{{ client.clients_name }}">
+                                                                <input type="text" class="form-control" name="clients_name" value="{{ client.clients_name }}" required>
                                                             </div>
                                                             <div class="input-group" style="margin-bottom: 5px;">
                                                                 <div class="input-group-prepend"><span class="input-group-text">Address</span></div>
-                                                                <textarea class="form-control" rows="6" name="clients_address"  placeholder="">{{ client.clients_address }}</textarea>
+                                                                <textarea class="form-control" rows="3" name="clients_address"  placeholder="">{{ client.clients_address }}</textarea>
+                                                            </div>
+                                                            <div class="row" style="margin: 0 0 5px 0;">
+                                                                <div class="col-6" style="padding-left: 0;">
+                                                                    <div class="input-group">
+                                                                        <div class="input-group-prepend">
+                                                                            <span class="input-group-text">Postcode</span>
+                                                                        </div>
+                                                                        <input type="text" class="form-control" name="clients_postcode" value="{{ client.clients_postcode }}" required>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-6" style="padding-right: 0;">
+                                                                    <div class="input-group">
+                                                                        <div class="input-group-prepend">
+                                                                            <span class="input-group-text">City</span>
+                                                                        </div>
+                                                                        <input type="text" class="form-control" name="clients_city" value="{{ client.clients_city }}" required>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="input-group" style="margin-bottom: 5px;">
+                                                                <div class="input-group-prepend">
+                                                                    <span class="input-group-text">Country</span>
+                                                                </div>
+                                                                <select class="form-control" name="clients_country" required>
+                                                                    {% for code, name in COUNTRIES %}
+                                                                        <option value="{{ code }}" {% if (client.clients_country ?: 'CH') == code %}selected{% endif %}>{{ name }}</option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                            <div class="input-group" style="margin-bottom: 5px;">
+                                                                <div class="input-group-prepend">
+                                                                    <span class="input-group-text">Contact Person</span>
+                                                                </div>
+                                                                <input type="text" class="form-control" name="clients_contact" value="{{ client.clients_contact }}">
                                                             </div>
                                                             <div class="input-group" style="margin-bottom: 5px;">
                                                                 <div class="input-group-prepend">
@@ -187,13 +309,13 @@
                 $("#loadingoverlay").hide();
                 {% if "CLIENTS:CREATE"|instancePermissions %}
                 $("#newClientButton").click(function () {
-                    bootbox.prompt("Enter Client Name", function (result) {
-                        if (result) {
-                            ajaxcall("clients/new.php", {"clients_name": result}, function (data) {
-                                location.reload();
-                            });
-                        }
-                    });
+                    $("#newClientModal").modal('show');
+                });
+                $(".saveClientNew-button").click(function () {
+                    var formData = $(".clientNew-form").serializeArray();
+                    ajaxcall("clients/new.php", {formData}, function (data) {
+                        location.reload();
+                    }, false);
                 });
                 {% endif %}
                 {% if "CLIENTS:EDIT"|instancePermissions %}
@@ -201,7 +323,7 @@
                     var formData = $(".clientEdit-form[data-clientid=" + $(this).data("clientid") + "]").serializeArray();
                     ajaxcall("clients/edit.php", {formData}, function (data) {
                         location.reload();
-                    });
+                    }, false);
                 });
                 $(".archiveButton").click(function () {
                 var id = $(this).data("id");

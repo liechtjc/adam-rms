@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../apiHeadSecure.php';
+use Sprain\SwissQrBill\DataGroup\Element\CreditorInformation;
 
 if (!$AUTH->instancePermissionCheck("BUSINESS:BUSINESS_SETTINGS:EDIT")) die("Sorry - you can't access this page");
 $array = [];
@@ -13,8 +14,16 @@ if (isset($array['instances_termsAndPayment'])) $array['instances_termsAndPaymen
 if (isset($array['instances_quoteTerms'])) $array['instances_quoteTerms'] = $bCMS->cleanString($array['instances_quoteTerms']);
 if (isset($array['instances_deliveryNoteTerms'])) $array['instances_deliveryNoteTerms'] = $bCMS->cleanString($array['instances_deliveryNoteTerms']);
 
+if (!empty($array['instances_config_qrBillIban']) && !CreditorInformation::create($array['instances_config_qrBillIban'])->isValid()) {
+    finish(false, ["code" => "PARAM-ERROR", "message" => "That doesn't look like a valid Swiss/Liechtenstein IBAN"]);
+}
+
+if (!empty($array['instances_config_qrBillReferencePrefix']) && !preg_match('/^\d{1,11}$/', $array['instances_config_qrBillReferencePrefix'])) {
+    finish(false, ["code" => "PARAM-ERROR", "message" => "The reference prefix must be digits only (up to 11)"]);
+}
+
 $DBLIB->where("instances_id",$AUTH->data['instance']["instances_id"]);
-$result = $DBLIB->update("instances", array_intersect_key( $array, array_flip( ["instances_name","instances_address","instances_phone","instances_email","instances_website","instances_weekStartDates","instances_logo","instances_emailHeader","instances_termsAndPayment", "instances_quoteTerms", "instances_deliveryNoteTerms", "instances_cableColours", "instances_config_vatRate"] ) ));
+$result = $DBLIB->update("instances", array_intersect_key( $array, array_flip( ["instances_name","instances_address","instances_phone","instances_email","instances_website","instances_weekStartDates","instances_logo","instances_emailHeader","instances_termsAndPayment", "instances_quoteTerms", "instances_deliveryNoteTerms", "instances_cableColours", "instances_config_vatRate", "instances_config_qrBillName", "instances_config_qrBillIban", "instances_config_qrBillStreet", "instances_config_qrBillBuildingNumber", "instances_config_qrBillPostcode", "instances_config_qrBillCity", "instances_config_qrBillCountry", "instances_config_qrBillReferencePrefix", "instances_config_qrBillIncludeProjectName"] ) ));
 echo $DBLIB->getLastError();
 if (!$result) finish(false, ["code" => "UPDATE-FAIL", "message"=> "Could not update instance"]);
 else {

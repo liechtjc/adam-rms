@@ -54,6 +54,57 @@
                             <input required type="number" step="0.01" min="0" class="form-control" value="{{ USERDATA.instance.instances_config_vatRate }}" name="instances_config_vatRate">
                             <small class="form-text text-muted">Applied to every project by default (unless marked as an Export). Individual projects cannot override this rate.</small>
                         </div>
+                        <hr>
+                        <h5>Swiss QR-Bill</h5>
+                        <p class="text-muted">When a valid QR-IBAN and address are set here and this business's currency is CHF, invoices automatically get a Swiss QR-bill payment slip. Other businesses just get a classic invoice.</p>
+                        <div class="form-group">
+                            <label>Creditor Entity Name</label>
+                            <input type="text" class="form-control" value="{{ USERDATA.instance.instances_config_qrBillName }}" name="instances_config_qrBillName" placeholder="{{ USERDATA.instance.instances_name }}">
+                            <small class="form-text text-muted">The legal entity name printed on the payment slip and used for banking. Defaults to the business name above if left blank - only set this if they differ (e.g. invoicing under a different registered company).</small>
+                        </div>
+                        <div class="form-group">
+                            <label>QR-IBAN</label>
+                            <input type="text" class="form-control" value="{{ USERDATA.instance.instances_config_qrBillIban }}" name="instances_config_qrBillIban" placeholder="CH...">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-8">
+                                <label>Street</label>
+                                <input type="text" class="form-control" value="{{ USERDATA.instance.instances_config_qrBillStreet }}" name="instances_config_qrBillStreet">
+                            </div>
+                            <div class="form-group col-4">
+                                <label>Building No.</label>
+                                <input type="text" class="form-control" value="{{ USERDATA.instance.instances_config_qrBillBuildingNumber }}" name="instances_config_qrBillBuildingNumber">
+                            </div>
+                        </div>
+                        <small class="form-text text-muted" style="margin-top: -10px;">Optional - leave blank if not needed, only Postcode/City/Country are required.</small>
+                        <div class="form-row" style="margin-top: 10px;">
+                            <div class="form-group col-6">
+                                <label>Postcode</label>
+                                <input type="text" class="form-control" value="{{ USERDATA.instance.instances_config_qrBillPostcode }}" name="instances_config_qrBillPostcode">
+                            </div>
+                            <div class="form-group col-6">
+                                <label>City</label>
+                                <input type="text" class="form-control" value="{{ USERDATA.instance.instances_config_qrBillCity }}" name="instances_config_qrBillCity">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Country</label>
+                            <select class="form-control" name="instances_config_qrBillCountry">
+                                {% for code, name in COUNTRIES %}
+                                    <option value="{{ code }}" {% if (USERDATA.instance.instances_config_qrBillCountry ?: 'CH') == code %}selected{% endif %}>{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Reference Prefix</label>
+                            <input type="text" class="form-control" value="{{ USERDATA.instance.instances_config_qrBillReferencePrefix }}" name="instances_config_qrBillReferencePrefix" maxlength="11" placeholder="e.g. 99000">
+                            <small class="form-text text-muted">Optional, digits only (up to 11). Prefixed to every reference number generated here, so you can tell them apart from references your accounting system generates on the same account.</small>
+                        </div>
+                        <div class="form-group form-check">
+                            <input type="hidden" name="instances_config_qrBillIncludeProjectName" value="0">
+                            <input type="checkbox" class="form-check-input" id="qrBillIncludeProjectName" name="instances_config_qrBillIncludeProjectName" value="1" {% if USERDATA.instance.instances_config_qrBillIncludeProjectName %}checked{% endif %}>
+                            <label class="form-check-label" for="qrBillIncludeProjectName">Include project name as additional information on the slip</label>
+                        </div>
                 </div>
                 <div class="card-footer">
                     {% if "BUSINESS:BUSINESS_SETTINGS:EDIT"|instancePermissions %}
@@ -67,7 +118,7 @@
                     $("#basicSettings").on("submit", function(e){
                         e.preventDefault();
                         var formData = $("#basicSettings").serializeArray();
-                        ajaxcall("instances/editInstance.php", {formData});
+                        ajaxcall("instances/editInstance.php", {formData}, null, false);
                     });
                 });
                 {% endif %}

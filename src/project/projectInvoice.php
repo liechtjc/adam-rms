@@ -97,25 +97,56 @@ if ($_GET['type'] === 'invoice'
         ));
     }
 
-    // Debtor (the client being invoiced) — only set if enough structured data is present;
-    // the spec allows a QR-bill "without debtor" so we fall back to omitting it otherwise.
-    // (Legacy clients edited before postcode/city/country were made mandatory may lack these.)
-    $debtorName = trim(($PAGEDATA['project']['clients_contact'] ?? '') !== ''
-        ? $PAGEDATA['project']['clients_contact'] . ', ' . $PAGEDATA['project']['clients_name']
-        : (string) ($PAGEDATA['project']['clients_name'] ?? ''));
+    // Debtor (the client being invoiced) — kept to name, address, postcode and city only,
+    // matching the address block on the invoice itself. Only set if enough structured data
+    // is present; the spec allows a QR-bill "without debtor" so we fall back to omitting it
+    // otherwise. (Legacy clients edited before postcode/city/country were made mandatory may
+    // lack these.)
+    $debtorName = trim((string) ($PAGEDATA['project']['clients_name'] ?? ''));
     if ($debtorName !== '' && !empty($PAGEDATA['project']['clients_postcode']) && !empty($PAGEDATA['project']['clients_city'])) {
-        $qrBill->setUltimateDebtor(StructuredAddress::createWithoutStreet(
-            $debtorName,
-            $PAGEDATA['project']['clients_postcode'],
-            $PAGEDATA['project']['clients_city'],
-            $PAGEDATA['project']['clients_country'] ?: 'CH'
-        ));
+        if (!empty($PAGEDATA['project']['clients_address'])) {
+            $qrBill->setUltimateDebtor(StructuredAddress::createWithStreet(
+                $debtorName,
+                $PAGEDATA['project']['clients_address'],
+                null,
+                $PAGEDATA['project']['clients_postcode'],
+                $PAGEDATA['project']['clients_city'],
+                $PAGEDATA['project']['clients_country'] ?: 'CH'
+            ));
+        } else {
+            $qrBill->setUltimateDebtor(StructuredAddress::createWithoutStreet(
+                $debtorName,
+                $PAGEDATA['project']['clients_postcode'],
+                $PAGEDATA['project']['clients_city'],
+                $PAGEDATA['project']['clients_country'] ?: 'CH'
+            ));
+        }
     }
 
     if ($qrBill->isValid()) {
         // Raw SVG markup, not a data URI: pdfmake's `image` node only decodes raster
         // formats (PNG/JPEG); SVG has to go through its separate `svg` node type instead.
         $PAGEDATA['QRBILL_IMAGE'] = $qrBill->getQrCode()->getAsString('svg');
+
+        // getFullAddress() only omits the country line for a hardcoded 'CH'. We want it
+        // omitted whenever the debtor's country matches the instance's own (entity) country
+        // instead, so e.g. a Swiss client of a Swiss business prints "1005 Lausanne" while
+        // an overseas client prints "US-68400 Hollywood". Values are read back off the
+        // debtor via its getters rather than the raw $_GET/DB values, since those are
+        // already trimmed/normalised by the library (multi-line addresses collapsed etc).
+        $qrBillEntityCountry = $AUTH->data['instance']['instances_config_qrBillCountry'] ?: 'CH';
+        $debtorText = false;
+        if ($debtor = $qrBill->getUltimateDebtor()) {
+            $debtorLines = [$debtor->getName()];
+            if ($debtor->getStreet()) {
+                $debtorLines[] = trim($debtor->getStreet() . ' ' . $debtor->getBuildingNumber());
+            }
+            $debtorLines[] = $debtor->getCountry() === $qrBillEntityCountry
+                ? sprintf('%s %s', $debtor->getPostalCode(), $debtor->getCity())
+                : sprintf('%s-%s %s', $debtor->getCountry(), $debtor->getPostalCode(), $debtor->getCity());
+            $debtorText = implode("\n", $debtorLines);
+        }
+
         $PAGEDATA['QRBILL_TEXT'] = [
             'iban' => $qrBill->getCreditorInformation()->getFormattedIban(),
             'creditor' => $qrBill->getCreditor()->getFullAddress(),
@@ -123,7 +154,7 @@ if ($_GET['type'] === 'invoice'
             'currency' => 'CHF',
             'reference' => $qrBill->getPaymentReference()->getFormattedReference(),
             'additionalInfo' => $qrBill->getAdditionalInformation() ? $qrBill->getAdditionalInformation()->getMessage() : false,
-            'debtor' => $qrBill->getUltimateDebtor() ? $qrBill->getUltimateDebtor()->getFullAddress() : false,
+            'debtor' => $debtorText,
         ];
     }
     // If invalid despite passing the eligibility check (e.g. stale/edited-around-validation

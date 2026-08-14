@@ -61,11 +61,17 @@
                             stack: [
                                 { text: "{{ project.clients_name|escape("js") }}", bold: true },
                                 {% if GET['addresses'] %}
+                                    {% if GET['contactName'] and project.clients_contact %}
+                                        "{{ project.clients_contact|escape("js") }}",
+                                    {% endif %}
                                     "{{ project.clients_address|escape("js") }}",
-                                    " ",
-                                    "{{ project.clients_website|escape("js") }}",
-                                    "{{ project.clients_email|escape("js") }}",
-                                    "{{ project.clients_phone|escape("js") }}"
+                                    {% set clientCountry = project.clients_country ?: 'CH' %}
+                                    {% set entityCountry = USERDATA.instance.instances_config_qrBillCountry ?: 'CH' %}
+                                    {% set cityLine = (project.clients_postcode ~ ' ' ~ project.clients_city)|trim %}
+                                    {% if clientCountry != entityCountry %}
+                                        {% set cityLine = clientCountry ~ '-' ~ cityLine %}
+                                    {% endif %}
+                                    "{{ cityLine|escape("js") }}"
                                 {% endif %}
                             ]
                         }
@@ -160,7 +166,7 @@
                     {% for instance in FINANCIALS.assetsAssignedSUB %}
                         {% set allAssets = allAssets|merge(instance['assets']) %}
                     {% endfor %}
-                    {% set allAssets = allAssets|sort((a, b) => a['assets'][0].assetCategories_name <=> b['assets'][0].assetCategories_name) %}
+                    {% set allAssets = allAssets|sort((a, b) => a['assets'][0].assetCategories_rank <=> b['assets'][0].assetCategories_rank) %}
 
                     {# Build linkedMap (parent assetsAssignments_id → children) and strip
                        children from their own type groups — they render below their parent. #}

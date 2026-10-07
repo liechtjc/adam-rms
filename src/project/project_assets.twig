@@ -13,24 +13,36 @@
         </div>
     {% endfor %}
 {% endfor %}
-<div class="card card-primary card-outline card-outline-tabs">
-    <div class="card-header p-0 border-bottom-0 card-tabs">
-        <ul class="nav nav-tabs" id="asset-list-tabs-tab" role="tablist">
-            <li class="nav-item">
-                <a class="nav-link active" id="asset-list-tabs-home-tab" data-toggle="pill" href="#asset-list-tabs-home" role="tab" aria-controls="asset-list-tabs-home" aria-selected="true"><b>Total</b></a>
-            </li>
-            {% if FINANCIALS.assetsAssigned|length > 0 %}
-            <li class="nav-item">
-                <a class="nav-link" id="asset-list-tab-thisinstance" data-toggle="pill" href="#asset-list-tabs-thisinstance" role="tab" aria-controls="asset-list-tabs-thisinstance" aria-selected="false">{{ USERDATA.instance.instances_name }}</a>
-            </li>
+{# Merge own + sub-hire assets into one list #}
+{% set allTypes = [] %}
+{% set assetCount = 0 %}
+{% for type in FINANCIALS.assetsAssigned %}
+    {% set allTypes = allTypes|merge([type|merge({'ownerId': USERDATA.instance.instances_id, 'ownerName': (FINANCIALS.assetsAssignedSUB|length > 0 ? USERDATA.instance.instances_name : '')})]) %}
+    {% set assetCount = assetCount + type['assets']|length %}
+{% endfor %}
+{% for instance in FINANCIALS.assetsAssignedSUB %}
+    {% for type in instance['assets'] %}
+        {% set allTypes = allTypes|merge([type|merge({'ownerId': instance['instance'].instances_id, 'ownerName': instance['instance'].instances_name})]) %}
+        {% set assetCount = assetCount + type['assets']|length %}
+    {% endfor %}
+{% endfor %}
+{% set allTypes = allTypes|sort((a, b) => [a['assets'][0].assetCategories_rank, a['assets'][0].assetCategories_name] <=> [b['assets'][0].assetCategories_rank, b['assets'][0].assetCategories_name]) %}
+<div class="card card-primary card-outline">
+    <div class="card-header d-flex flex-wrap align-items-center justify-content-between">
+        <div id="assetListTotals">
+            <b>{{ assetCount }} asset{{ assetCount != 1 ? 's' }}</b> ({{ FINANCIALS.mass|mass }})
+            {% if project.projectsTypes_config_finance == 1 %}
+                <span class="mx-2">|</span>Total: <b>{{ FINANCIALS.prices.subTotal|money }}</b>
+                <span class="mx-2">|</span>Discount: <b>{{ FINANCIALS.prices.discounts|money }}</b>
+                <span class="mx-2">|</span>After discount: <b>{{ FINANCIALS.prices.total|money }}</b>
+                <br/><small class="text-muted">Project duration set as {{ FINANCIALS['priceMaths']["weeks"] }} week{{ FINANCIALS['priceMaths']["weeks"] != 1 ? 's' : '' }} and {{ FINANCIALS['priceMaths']["days"] }} day{{ FINANCIALS['priceMaths']["days"] != 1 ? 's' : ''}} for asset pricing purposes.
+                {% if "PROJECTS:EDIT:DATES"|instancePermissions %}
+                <a href="{{ CONFIG.ROOTURL }}/project/?id={{ project.projects_id }}">Change project duration</a>.
+                {% endif %}
+                </small>
             {% endif %}
-            {% for instance in FINANCIALS.assetsAssignedSUB %}
-                <li class="nav-item">
-                    <a class="nav-link" id="asset-list-tab-instance{{ instance['instance'].instances_id }}" data-toggle="pill" href="#asset-list-tabs-instance{{ instance['instance'].instances_id }}" role="tab" aria-controls="asset-list-tabs-instance{{ instance['instance'].instances_id }}" aria-selected="false">{{  instance['instance'].instances_name }} Assets</a>
-                </li>
-            {% endfor %}
-            <li class="pt-2 px-3">
-                <div class="card-tools">
+        </div>
+        <div class="card-tools">
                     {% if "PROJECTS:PROJECT_ASSETS:EDIT:ASSIGNMNET_COMMENT"|instancePermissions %}
                         <button type="button" class="btn btn-tool" title="Set comment for assignment" id="setAssetAssignmentComment">
                             <i class="far fa-comment"></i></button>
@@ -54,72 +66,31 @@
                         <button type="button" class="btn btn-tool" title="Remove assets" id="setAssetAssignmentDelete">
                             <i class="fas fa-trash"></i></button>
                     {% endif %}
-                    <button type="button" class="btn btn-tool" title="Expand All" id="expandAll">
-                        <i class="fas fa-angle-down"></i> Expand</button>
-<a type="button" class="btn btn-tool" href="{{ CONFIG.LINKS_USERGUIDEURL }}projects/assets" target="_blank">Help</a>
-
-                </div>
-            </li>
-        </ul>
-    </div>
-    <div class="card-body p-0">
-        <div class="tab-content" id="asset-list-tabs-tabContent">
-            <div class="tab-pane fade show active p-3" id="asset-list-tabs-home" role="tabpanel" aria-labelledby="asset-list-tabs-home-tab">
-                <p style="font-style: italic;">To view assets assigned to this project, select a business above</p>
-                <p>{{ (FINANCIALS.assetsAssigned|length + FINANCIALS.assetsAssignedSUB|length) }} Asset{{ (FINANCIALS.assetsAssigned|length + FINANCIALS.assetsAssignedSUB|length) != 1 ? 's' }} assigned to {{ project.projects_name }} ({{FINANCIALS.mass|mass }})</p>
-                {% if project.projectsTypes_config_finance == 1 %}
-                    <p>Project duration set as {{ FINANCIALS['priceMaths']["weeks"] }} week{{ FINANCIALS['priceMaths']["weeks"] != 1 ? 's' : '' }} and {{ FINANCIALS['priceMaths']["days"] }} day{{ FINANCIALS['priceMaths']["days"] != 1 ? 's' : ''}} for asset pricing purposes.
-                    {% if "PROJECTS:EDIT:DATES"|instancePermissions %}
-                    <a href="{{ CONFIG.ROOTURL }}/project/?id={{ project.projects_id }}">Change project duration</a>.
-                    {% endif %}
-                    </p>
-                {% endif %}
-            </div>
-            <div class="tab-pane fade" id="asset-list-tabs-thisinstance" role="tabpanel" aria-labelledby="asset-list-tabs-profile-tab">
-                {% embed 'project/twigIncludes/assetList/table.twig' with {"instanceid": USERDATA.instance.instances_id} %}
-                    {% block tableBody %}
-                        {% set currentCategory = "" %}
-                        {% set sortedAssetsAssigned = FINANCIALS.assetsAssigned|sort((a, b) => a['assets'][0].assetCategories_rank <=> b['assets'][0].assetCategories_rank) %}
-                        {% for type in sortedAssetsAssigned %}
-                            {% if type['assets'][0].assetCategories_name != currentCategory %}
-                                {% set currentCategory = type['assets'][0].assetCategories_name %}
-                                {% set currentCategoryID = type['assets'][0].assetCategories_id %}
-                                <tr class="showHideFilter" data-filter="categoryFilter{{ currentCategoryID }}" data-filterclose="categoryFilterClose{{ currentCategoryID }}">
-                                    <td colspan="999">
-                                        <i class="{{ type['assets'][0].assetCategories_fontAwesome }}" style="margin-right:10px;"></i>{{ type['assets'][0].assetCategories_name }}
-                                    </td>
-                                </tr>
-                            {% endif %}
-                            {% embed 'project/twigIncludes/assetList/tableItem.twig' with {"type": type,"all": sortedAssetsAssigned, "categoryid":currentCategoryID,"instanceid": USERDATA.instance.instances_id} %}{% endembed %}
-                        {% endfor %}
-                    {% endblock %}
-                {% endembed %}
-            </div>
-            {% for instance in FINANCIALS.assetsAssignedSUB %}
-                <div class="tab-pane fade" id="asset-list-tabs-instance{{ instance['instance'].instances_id }}" role="tabpanel" aria-labelledby="asset-list-tabs-messages-tab">
-                    {% embed 'project/twigIncludes/assetList/table.twig' with {"instanceid": instance['instance'].instances_id } %}
-                        {% block tableBody %}
-                            {% set currentCategory = "" %}
-                            {% set sortedInstanceAssets = instance['assets']|sort((a, b) => a['assets'][0].assetCategories_rank <=> b['assets'][0].assetCategories_rank) %}
-                            {% for type in sortedInstanceAssets %}
-                                {% if type['assets'][0].assetCategories_name != currentCategory %}
-                                    {% set currentCategory = type['assets'][0].assetCategories_name %}
-                                    {% set currentCategoryID = type['assets'][0].assetCategories_id %}
-                                    <tr class="showHideFilter" data-filter="categoryFilter{{ currentCategoryID }}" data-filterclose="categoryFilterClose{{ currentCategoryID }}">
-                                        <td colspan="999">
-                                            <i class="{{ type['assets'][0].assetCategories_fontAwesome }}" style="margin-right:10px;"></i>{{ type['assets'][0].assetCategories_name }}
-                                        </td>
-                                    </tr>
-                                {% endif %}
-                                {% embed 'project/twigIncludes/assetList/tableItem.twig' with {"type": type,"all": sortedInstanceAssets, "categoryid":currentCategoryID,"instanceid": instance['instance'].instances_id} %}{% endembed %}
-                            {% endfor %}
-                        {% endblock %}
-                    {% endembed %}
-                </div>
-            {% endfor %}
+                    <button type="button" class="btn btn-tool" title="Cycle view: all assets / asset types only / categories only" id="expandAll"></button>
+                    <a type="button" class="btn btn-tool" href="{{ CONFIG.LINKS_USERGUIDEURL }}projects/assets" target="_blank">Help</a>
         </div>
     </div>
+    <div class="card-body p-0">
+        {% embed 'project/twigIncludes/assetList/table.twig' with {"allTypes": allTypes} %}
+            {% block tableBody %}
+                {% set currentCategory = "" %}
+                {% for type in allTypes %}
+                    {% if type['assets'][0].assetCategories_name != currentCategory %}
+                        {% set currentCategory = type['assets'][0].assetCategories_name %}
+                        {% set currentCategoryID = type['assets'][0].assetCategories_id %}
+                        <tr class="showHideFilter" data-filter="categoryFilter{{ currentCategoryID }}" data-filterclose="categoryFilterClose{{ currentCategoryID }}" data-catheader="{{ currentCategoryID }}" style="cursor:pointer">
+                            <td colspan="999">
+                                <i class="{{ type['assets'][0].assetCategories_fontAwesome }}" style="margin-right:10px;"></i>{{ type['assets'][0].assetCategories_name }}
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% embed 'project/twigIncludes/assetList/tableItem.twig' with {"type": type, "categoryid": currentCategoryID, "instanceid": type.ownerId, "ownerName": type.ownerName} %}{% endembed %}
+                {% endfor %}
+            {% endblock %}
+        {% endembed %}
+    </div>
 </div>
+
 
 <script>
     $(document).ready(function () {
@@ -136,10 +107,8 @@
             });
             return selected;
         }
-        $(".assetAssignmentCheckboxAll[data-instanceid]").click(function () {
-            var instance = $(this).data("instanceid");
-            $(".assetAssignmentCheckbox[data-instanceid=" + instance + "]").prop('checked', $(this).prop('checked'));
-            $(".assetAssignmentCheckboxType[data-instanceid=" + instance + "]").prop('checked', $(this).prop('checked'));
+        $(".assetAssignmentCheckboxAll").click(function () {
+            $(".assetAssignmentCheckbox, .assetAssignmentCheckboxType").prop('checked', $(this).prop('checked'));
         });
         $(".assetAssignmentCheckboxType[data-typeid][data-instanceid]").click(function () {
             var type = $(this).data("typeid");
@@ -149,34 +118,73 @@
         $(".assetAssignmentCheckbox[data-typeid][data-instanceid]").click(function () {
             var type = $(this).data("typeid");
             var instance = $(this).data("instanceid");
-            if ($(".assetAssignmentCheckbox[data-typeid=" + type + "][data-instanceid=" + instance + "]:checked").length == $(".assetAssignmentCheckbox[data-typeid=" + type + "][data-instanceid=" + instance + "]").length) {
-                $(".assetAssignmentCheckboxType[data-typeid=" + type + "][data-instanceid=" + instance + "]").prop('checked', true);
-            } else {
-                $(".assetAssignmentCheckboxType[data-typeid=" + type + "][data-instanceid=" + instance + "]").prop('checked', false);
-            }
+            var sel = "[data-typeid=" + type + "][data-instanceid=" + instance + "]";
+            $(".assetAssignmentCheckboxType" + sel).prop('checked', $(".assetAssignmentCheckbox" + sel + ":checked").length == $(".assetAssignmentCheckbox" + sel).length);
         });
 
-
-        $(".showHideFilter").click(function () {
-            $("." + $(this).data("filter")).toggle(500);
-            if ($(this).data("filterclose")) {
-                $("." + $(this).data("filterclose")).fadeOut(500);
+        // Expand/collapse state: everything open by default, closed groups remembered across reloads
+        var stateKey = "adamrms-project-{{ project.projects_id }}-assets-state";
+        var closedCats = {}, closedTypes = {};
+        try {
+            var saved = JSON.parse(localStorage.getItem(stateKey) || "null");
+            if (saved) {
+                (saved.cats || []).forEach(function (id) { closedCats[id] = true; });
+                (saved.types || []).forEach(function (id) { closedTypes[id] = true; });
             }
+        } catch (e) {}
+        function saveState() {
+            try {
+                localStorage.setItem(stateKey, JSON.stringify({cats: Object.keys(closedCats), types: Object.keys(closedTypes)}));
+            } catch (e) {}
+        }
+        function renderState() {
+            $("tr[data-cat]").each(function () {
+                var visible = !closedCats[$(this).data("cat")];
+                if (visible && $(this).data("type") !== undefined) visible = !closedTypes[$(this).data("type")];
+                $(this).toggle(visible);
+            });
+            var next = {all: '<i class="fas fa-angle-down"></i> Types only', types: '<i class="fas fa-angle-double-up"></i> Categories only', cats: '<i class="fas fa-angle-double-down"></i> Expand all'};
+            $("#expandAll").html(next[viewMode()]);
+        }
+        // Overall mode: "cats" = only category rows, "types" = categories open + multi-asset types collapsed, otherwise "all"
+        function viewMode() {
+            var cats = $("tr[data-catheader]"), types = $("tr.typeFilter[data-type]").map(function () { return String($(this).data("type")); }).get();
+            var allCatsClosed = cats.length > 0 && cats.filter(function () { return !closedCats[$(this).data("catheader")]; }).length == 0;
+            if (allCatsClosed) return "cats";
+            var anyCatClosed = cats.filter(function () { return closedCats[$(this).data("catheader")]; }).length > 0;
+            var allTypesClosed = types.length > 0 && types.every(function (t) { return closedTypes[t]; });
+            return (!anyCatClosed && allTypesClosed) ? "types" : "all";
+        }
+        $(".showHideFilter").click(function () {
+            var filter = String($(this).data("filter"));
+            if (filter.indexOf("categoryFilter") === 0) {
+                var cat = $(this).data("catheader");
+                if (closedCats[cat]) delete closedCats[cat]; else closedCats[cat] = true;
+            } else {
+                var type = filter.replace("typeFilter", "");
+                if (closedTypes[type]) delete closedTypes[type]; else closedTypes[type] = true;
+            }
+            saveState();
+            renderState();
         });
         $("#expandAll").click(function () {
-            if ($(".categoryFilter").is(":visible")) {
-                if ($(".typeFilter").is(":visible")) {
-                    $(".typeFilter").hide();
-                    $(".categoryFilter").hide();
-                } else {
-                    $(".typeFilter").show();
-                }
-            } else {
-                $(".categoryFilter").show();
+            var mode = viewMode();
+            if (mode === "all" && $("tr.typeFilter[data-type]").length === 0) mode = "types"; // nothing to collapse at type level
+            closedCats = {};
+            closedTypes = {};
+            if (mode === "all") {
+                // -> asset types only: hide the individual assets of multi-asset types
+                $("tr.typeFilter[data-type]").each(function () { closedTypes[$(this).data("type")] = true; });
+            } else if (mode === "types") {
+                // -> categories only
+                $("tr[data-catheader]").each(function () { closedCats[$(this).data("catheader")] = true; });
             }
+            // "cats" -> everything open again
+            saveState();
+            renderState();
         });
-        $(".categoryFilter").hide();
-        $(".typeFilter").hide();
+        renderState();
+
 
         {% if "PROJECTS:PROJECT_ASSETS:EDIT:ASSIGNMNET_COMMENT"|instancePermissions %}
         $("#setAssetAssignmentComment").click(function () {

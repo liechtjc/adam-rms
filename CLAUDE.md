@@ -272,6 +272,12 @@ $PAGEDATA['BOARDASSETS'] = buildAssetBoard($statuses, $PAGEDATA['FINANCIALS'], $
 - `assetsAssignments.assetsAssignmentsStatus_id` is NULL until an asset is first dispatched; always filter `assetsAssignments_deleted = 0` when looking up assignments by tag.
 - Swap (`api/projects/assets/swap.php`) is only allowed for assignments with a NULL status, to keep traceability of dispatched assets.
 
+### Project Asset List (Assets View)
+`src/project/project_assets.twig` renders one merged list: `FINANCIALS.assetsAssigned` plus every `FINANCIALS.assetsAssignedSUB[*].assets`, sorted by `assetCategories_rank`. Type groups stay per owner (asset types belong to one instance); `tableItem.twig` shows an owner badge per asset when `ownerName` is passed.
+- Totals bar uses `FINANCIALS.prices` and is shown only when `project.projectsTypes_config_finance == 1` (the "Finance" flag on the instance's Project Types page).
+- Edits (comment/price/discount/status/swap/remove) still `location.reload()`; collapsed categories/types are kept in `localStorage` (`adamrms-project-{id}-assets-state`) so the view reopens the same way.
+- Money is always formatted in the viewing instance's currency; there is no per-owner currency conversion.
+
 ### Audit Logging
 ```php
 $bCMS->auditLog($actionType, $table, $data, $userid, $useridTo, $projectid, $targetid);

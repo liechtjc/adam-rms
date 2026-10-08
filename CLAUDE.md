@@ -263,6 +263,15 @@ $amount = new Money($valueInCents, new Currency($AUTH->data['instance']['instanc
 $formatted = apiMoney($amount);
 ```
 
+### Asset Statuses (Dispatch Board)
+The project's instance owns the status set (`assetsAssignmentsStatus`, scoped by `instances_id`): every assignment in a project, including hired-in assets from other instances, uses the project instance's statuses. Validate a status against `$AUTH->data['instance']['instances_id']`, not the asset's instance.
+```php
+// Group assignments into board columns (by status id; NULL status = first column)
+$PAGEDATA['BOARDASSETS'] = buildAssetBoard($statuses, $PAGEDATA['FINANCIALS'], $instanceName); // src/common/libs/bCMS/assetBoard.php
+```
+- `assetsAssignments.assetsAssignmentsStatus_id` is NULL until an asset is first dispatched; always filter `assetsAssignments_deleted = 0` when looking up assignments by tag.
+- Swap (`api/projects/assets/swap.php`) is only allowed for assignments with a NULL status, to keep traceability of dispatched assets.
+
 ### Audit Logging
 ```php
 $bCMS->auditLog($actionType, $table, $data, $userid, $useridTo, $projectid, $targetid);

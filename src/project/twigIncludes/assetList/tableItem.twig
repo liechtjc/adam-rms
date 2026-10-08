@@ -1,7 +1,7 @@
 {% if type['assets']|length > 1 %}{# If there's just one item then just display it on its own #}
-<tr class="categoryFilter categoryFilter{{ categoryid }} showHideFilter" data-filter="typeFilter{{ type['assets'][0].assetTypes_id }}">
+<tr class="categoryFilter categoryFilter{{ categoryid }} showHideFilter" data-filter="typeFilter{{ type['assets'][0].assetTypes_id }}" data-cat="{{ categoryid }}">
     <td><input type="checkbox" class="assetAssignmentCheckboxType" data-instanceid="{{ instanceid }}"  data-typeid="{{ type['assets'][0].assetTypes_id }}" /></td>
-    <td colspan="3">{{ type['assets']|length }}x <b>{{ type['assets'][0].manufacturers_id != 1 ? type['assets'][0].manufacturers_name ~ " - " : "" }}{{ type['assets'][0].assetTypes_name }}</b>
+    <td>{{ type['assets']|length }}x <b>{{ type['assets'][0].manufacturers_id != 1 ? type['assets'][0].manufacturers_name ~ " - " : "" }}{{ type['assets'][0].assetTypes_name }}</b>
     </td>
     <td>
         {{ type['totals']['status'] }}
@@ -20,15 +20,16 @@
 </tr>
 {% endif %}
 {% for assetAssignment in type['assets'] %}
-<tr id="assetRow{{ assetAssignment.assetsAssignments_id }}" class="{% if type['assets']|length > 1 %}typeFilter typeFilter{{ type['assets'][0].assetTypes_id }} categoryFilterClose{{ categoryid }}{% else %}categoryFilter categoryFilter{{ categoryid }}{% endif %}">
+<tr id="assetRow{{ assetAssignment.assetsAssignments_id }}" data-cat="{{ categoryid }}"{% if type['assets']|length > 1 %} data-type="{{ type['assets'][0].assetTypes_id }}"{% endif %} class="{% if type['assets']|length > 1 %}typeFilter typeFilter{{ type['assets'][0].assetTypes_id }} categoryFilterClose{{ categoryid }}{% else %}categoryFilter categoryFilter{{ categoryid }}{% endif %}">
     <td>
         <input type="checkbox" class="assetAssignmentCheckbox" data-typeid="{{ type['assets'][0].assetTypes_id }}" data-instanceid="{{ instanceid }}" data-assetassignmentid="{{ assetAssignment.assetsAssignments_id }}" />
     </td>
-    <td colspan="{{ assetAssignment.assetsAssignments_comment ? '1' : (assetAssignment.assetTypes_definableFields_ARRAY|length > 0 ? '2' : '3') }}">
+    <td>
         {% if type['assets']|length == 1 %}
             <b>{{ assetAssignment.manufacturers_id != 1 ? assetAssignment.manufacturers_name ~ " - " : "" }}{{ assetAssignment.assetTypes_name }}</b>
         {% endif %}
         <a target="_blank" href="{{ CONFIG.ROOTURL }}/asset.php?id={{assetAssignment.assetTypes_id}}&asset={{assetAssignment.assets_id}}&instance={{ instanceid }}">{{ assetAssignment.assets_tag|aTag }}</a>
+        {% if ownerName is defined and ownerName %}<span class="badge badge-light border ml-1" title="Owner">{{ ownerName }}</span>{% endif %}
         {% for flag in assetAssignment.flagsblocks.FLAG %}
             <a  target="_blank" href="{{ CONFIG.ROOTURL }}/maintenance/job.php?id={{ flag.maintenanceJobs_id }}" class="btn btn-sm btn-warning"><i class="far fa-flag" title="{{ flag.maintenanceJobs_title }}"></i></a>
         {% endfor %}
@@ -38,22 +39,10 @@
         {% if assetAssignment.assetsAssignments_linkedTo %}
             <button class="btn btn-sm btn-secondary" title="Asset was assigned automatically because it's linked to another asset"><i class="fas fa-link"></i></button>
         {% endif %}
-
-    </td>
-    {% if assetAssignment.assetsAssignments_comment %}
-    <td colspan="{{ assetAssignment.assetTypes_definableFields_ARRAY|length > 0 ? '1' : '2' }}">
-        {{ assetAssignment.assetsAssignments_comment }}
-    </td>
-    {% endif %}
-    {% if assetAssignment.assetTypes_definableFields_ARRAY|length > 0 %}
-    <td>
-      {% for field in assetAssignment.assetTypes_definableFields|split(",") %}
-        {% if field != "" %}
-            <b>{{ field }}: </b>{{ assetAssignment['asset_definableFields_' ~ loop.index] }}<br/>
+        {% if assetAssignment.assetsAssignments_comment %}
+            <div class="text-muted small mt-1"><i class="far fa-comment mr-1"></i>{{ assetAssignment.assetsAssignments_comment }}</div>
         {% endif %}
-    {% endfor %}
     </td>
-    {% endif %}
     <td>
         {{ (assetAssignment.assetsAssignmentsStatus_name ? assetAssignment.assetsAssignmentsStatus_name ~ "/" : '') }}
         {% if assetAssignment.latestScan %}

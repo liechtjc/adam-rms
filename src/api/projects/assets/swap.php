@@ -7,6 +7,7 @@
  * Arguments:
  *  - assetsAssignments_id: an Asset Assignment ID
  *  - assets_id: the asset to replace in the assignment
+ *  - assetsAssignmentsStatus_id (optional): status to give the swapped-in asset
  */
 
 require_once __DIR__ . '/../../apiHeadSecure.php';
@@ -26,6 +27,8 @@ $DBLIB->where("projects.projects_archived", 0);
 $DBLIB->where('assets_deleted', 0);
 $currentAsset = $DBLIB->getone("assets");
 if (!$currentAsset) finish(false);
+//Once an assignment has a status the physical asset has been handled, so swapping it would lose traceability
+if (isset($_POST['assetsAssignmentsStatus_id']) && $currentAsset['assetsAssignmentsStatus_id'] !== null) finish(false, ["message" => "Asset already has a status and cannot be swapped", "code" => "ALREADYSTATUS"]);
 
 // Check Asset is free and available
 $DBLIB->where("assets.assets_id", $_POST['assets_id']);
@@ -48,8 +51,19 @@ $assignments = $DBLIB->get("assetsAssignments", null, ["assetsAssignments.projec
 $flagsBlocks = assetFlagsAndBlocks($_POST['assets_id']);
 
 if (count($assignments) < 1 and $flagsBlocks['COUNT']['BLOCK'] < 1) {
+    $update = ["assets_id" => $_POST['assets_id']];
+    if (isset($_POST['assetsAssignmentsStatus_id'])) {
+        //The project's instance owns the status set
+        $DBLIB->where("assetsAssignmentsStatus_id", $_POST['assetsAssignmentsStatus_id']);
+        $DBLIB->where("instances_id", $AUTH->data['instance']['instances_id']);
+        $DBLIB->where("assetsAssignmentsStatus_deleted", 0);
+        $status = $DBLIB->getone("assetsAssignmentsStatus", ["assetsAssignmentsStatus_id"]);
+        if (!$status) finish(false, ["message" => "Status not found", "code" => "STATUSNOTFOUND"]);
+        $update["assetsAssignmentsStatus_id"] = $status['assetsAssignmentsStatus_id'];
+    }
     $DBLIB->where('assetsAssignments_id', $currentAsset['assetsAssignments_id']);
-    $assignment = $DBLIB->update("assetsAssignments", ["assets_id" => $_POST['assets_id']],1);
+    $DBLIB->update("assetsAssignments", $update, 1);
+    $bCMS->auditLog("SWAP-ASSET", "assetsAssignments", $currentAsset['assetsAssignments_id'] . " asset " . $currentAsset['assets_id'] . " swapped for " . $_POST['assets_id'], $AUTH->data['users_userid'], null, $currentAsset['projects_id']);
     finish(true);
 } else finish(false);
 

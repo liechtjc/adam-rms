@@ -11,6 +11,12 @@ if (isset($_POST['assetsAssignments_id'])){
     finish(false);
 }
 
+//The project's instance owns the status set, so the status must belong to it
+$DBLIB->where("assetsAssignmentsStatus_id", $_POST['assetsAssignments_status']);
+$DBLIB->where("instances_id", $AUTH->data['instance']['instances_id']);
+$DBLIB->where("assetsAssignmentsStatus_deleted", 0);
+if (!$DBLIB->getOne("assetsAssignmentsStatus", ["assetsAssignmentsStatus_id"])) finish(false, ["message" => "Status not found", "code" => "STATUSNOTFOUND"]);
+
 $DBLIB->where("assetsAssignments.assetsAssignments_deleted", 0);
 $DBLIB->where("projects.instances_id", $AUTH->data['instance']['instances_id']);
 $DBLIB->where("projects.projects_deleted", 0);

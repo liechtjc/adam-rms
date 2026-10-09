@@ -108,12 +108,12 @@
                                             [{ text: 'Contact:', bold: true },"{{ project.users_name1|escape("js") ~ " " ~ project.users_name2|escape("js") ~ " " ~ project.users_email|escape("js") }}"],
                                         {% endif %}
                                         {% if project.projects_dates_use_start or project.projects_dates_use_end %}
-                                            [{ text: 'Project Date:', bold: true },{ text: "{% if project.projects_dates_use_start %}{{ project.projects_dates_use_start|date("j M Y")|escape("js") }}{% endif %}{% if project.projects_dates_use_start and project.projects_dates_use_end %} - {% endif %}{% if project.projects_dates_use_end %}{{ project.projects_dates_use_end|date("j M Y")|escape("js") }}{% endif %}", noWrap: true }],
+                                            [{ text: 'Pick-up / Drop-off:', bold: true },{ text: "{% if project.projects_dates_use_start %}{{ project.projects_dates_use_start|date("j M Y")|escape("js") }}{% endif %}{% if project.projects_dates_use_start and project.projects_dates_use_end %} - {% endif %}{% if project.projects_dates_use_end %}{{ project.projects_dates_use_end|date("j M Y")|escape("js") }}{% endif %}", noWrap: true }],
+                                        {% endif %}
+                                        {% if project.projects_dates_deliver_start or project.projects_dates_deliver_end %}
+                                            [{ text: 'Date assets in use:', bold: true },{ text: "{% if project.projects_dates_deliver_start %}{{ project.projects_dates_deliver_start|date("j M Y")|escape("js") }}{% endif %}{% if project.projects_dates_deliver_start and project.projects_dates_deliver_end %} - {% endif %}{% if project.projects_dates_deliver_end %}{{ project.projects_dates_deliver_end|date("j M Y")|escape("js") }}{% endif %}", noWrap: true }],
                                         {% endif %}
                                         [{ text: 'Coeff:', bold: true },{ text: "{{ coeffDisplay|escape("js") }}", bold: true }],
-                                        {% if project.projects_dates_deliver_start or project.projects_dates_deliver_end %}
-                                            [{ text: 'Pick-up / Drop-off:', bold: true },{ text: "{% if project.projects_dates_deliver_start %}{{ project.projects_dates_deliver_start|date("j M Y")|escape("js") }}{% endif %}{% if project.projects_dates_deliver_start and project.projects_dates_deliver_end %} - {% endif %}{% if project.projects_dates_deliver_end %}{{ project.projects_dates_deliver_end|date("j M Y")|escape("js") }}{% endif %}", noWrap: true }],
-                                        {% endif %}
                                         {% if GET['totalmass'] and project.projectsTypes_config_assets == 1 %}
                                             [{ text: 'Mass Estimate:', bold: true },"{{FINANCIALS.mass|mass|escape("js") }}"],
                                         {% endif %}
@@ -161,6 +161,50 @@
                 {% if GET['masses'] %}{% set itemW = itemW - 27 %}{% endif %}
                 {% if project.projectsTypes_config_finance == 1 %}{% set itemW = itemW - 173 %}{% endif %}
 
+                {% set showSubHires = FINANCIALS.payments.subHire.ledger|length > 0 and project.projectsTypes_config_finance == 1 and GET['subHires'] %}
+                {% set showSales = FINANCIALS.payments.sales.ledger|length > 0 and project.projectsTypes_config_finance == 1 and GET['sales'] %}
+                {% set showStaff = FINANCIALS.payments.staff.ledger|length > 0 and project.projectsTypes_config_finance == 1 and GET['staff'] %}
+                {% set ledgerRows %}
+                                {% for group in [
+                                    { show: showSubHires, label: "Additional Hire Items", ledger: FINANCIALS.payments.subHire.ledger },
+                                    { show: showSales, label: "Sales", ledger: FINANCIALS.payments.sales.ledger },
+                                    { show: showStaff, label: "Staff", ledger: FINANCIALS.payments.staff.ledger }
+                                ] %}
+                                    {% if group.show %}
+                                        [{
+                                            text: "{{ group.label|escape("js") }}",
+                                            style: { bold: true },
+                                            fillColor: '#F5F5F5',
+                                            colSpan: {{ columnCount }},
+                                            margin: 3
+                                        },
+                                        {% for i in range(2, columnCount) %}{},{% endfor %}
+                                        ],
+                                        {% for payment in group.ledger %}
+                                        [
+                                            {% if GET['checkboxes'] %}{ text: '' },{% endif %}
+                                            { text: '' },
+                                            {
+                                                stack: [
+                                                    { text: "{{ payment.payments_supplier|escape("js") }}{% if payment.payments_quantity != 1 %} (x{{ payment.payments_quantity|escape("js") }}){% endif %}" },
+                                                    { text: "{{ payment.payments_comment|escape("js") }}", color: '#595959', margin: [0, 2, 0, 0] }
+                                                ]
+                                            },
+                                            {% if GET['masses'] %}{ text: '' },{% endif %}
+                                            {% if project.projectsTypes_config_finance == 1 %}
+                                                { text: "{% if GET['prices'] %}{{ payment.payments_amount|moneyDecimal|escape("js") }}{% endif %}", style: { alignment: 'right' } },
+                                                { text: '' },
+                                                { text: '' },
+                                                { text: '' },
+                                                { text: "{% if GET['prices'] %}{{ payment.payments_amountTotal|moneyDecimal|escape("js") }}{% endif %}", style: { alignment: 'right' } },
+                                            {% endif %}
+                                        ],
+                                        {% endfor %}
+                                    {% endif %}
+                                {% endfor %}
+                {% endset %}
+                {% set filteredAssets = [] %}
+                {% set allAssets = [] %}
                 {% if GET['assets'] and project.projectsTypes_config_assets == 1 %}
                     {% set allAssets = FINANCIALS.assetsAssigned %}
                     {% for instance in FINANCIALS.assetsAssignedSUB %}
@@ -188,7 +232,8 @@
                         {% endif %}
                     {% endfor %}
 
-                    {% if filteredAssets|length > 0 %}
+                    {% endif %}
+                {% if filteredAssets|length > 0 or ledgerRows|trim %}
                         {
                             table: {
                                 headerRows: 1,
@@ -232,6 +277,7 @@
                                     {% endif %}
                                     {% embed 'project/twigIncludes/assetList/tableItemPDF.twig' with {"type": type, "all": filteredAssets, "categoryid": currentCategoryID, "instanceid": USERDATA.instance.instances_id, "linkedMap": linkedMap} %}{% endembed %}
                                 {% endfor %}
+                                {{ ledgerRows|raw }}
                                 ],
                             },
                             layout: {
@@ -249,94 +295,13 @@
                             },
                             margin: [ 0, 10, 0, 10 ]
                         },
-                    {% endif %}
-                    { text: "{{ allAssets|length }} Total Item{{ allAssets|length != 1 ? 's' }}", style: { fontSize: 9, bold: true, alignment: 'right' } },
                 {% endif %}
-                {% set showSubHires = FINANCIALS.payments.subHire.ledger|length > 0 and project.projectsTypes_config_finance == 1 and GET['subHires'] %}
-                {% set showSales = FINANCIALS.payments.sales.ledger|length > 0 and project.projectsTypes_config_finance == 1 and GET['sales'] %}
-                {% set showStaff = FINANCIALS.payments.staff.ledger|length > 0 and project.projectsTypes_config_finance == 1 and GET['staff'] %}
-                {% if showSubHires or showSales or showStaff %}
-                    {
-                        table: {
-                            headerRows: 1,
-                            widths: [
-                                {% if GET['checkboxes'] %}16,{% endif %}
-                                30,
-                                {{ itemW }},
-                                {% if GET['masses'] %}27,{% endif %}
-                                {% if project.projectsTypes_config_finance == 1 %}
-                                    42, 25, 42, 25, 42,
-                                {% endif %}
-                            ],
-                            body: [
-                                [
-                                    {% if GET['checkboxes'] %}{ text: '' },{% endif %}
-                                    { text: '' },
-                                    { text: 'Item', style: { bold: true } },
-                                    {% if GET['masses'] %}{ text: '' },{% endif %}
-                                    {% if project.projectsTypes_config_finance == 1 %}
-                                        { stack: [{ text: 'Base', bold: true }, { text: '{{ moneySymbol() }}' }], alignment: 'right' },
-                                        { text: 'Qty', style: { bold: true, alignment: 'right' } },
-                                        { text: '' },
-                                        { text: '' },
-                                        { stack: [{ text: 'Final', bold: true }, { text: '{{ moneySymbol() }}' }], alignment: 'right' },
-                                    {% endif %}
-                                ],
-                                {% for group in [
-                                    { show: showSubHires, label: "Additional Hire Items", ledger: FINANCIALS.payments.subHire.ledger },
-                                    { show: showSales, label: "Sales", ledger: FINANCIALS.payments.sales.ledger },
-                                    { show: showStaff, label: "Staff", ledger: FINANCIALS.payments.staff.ledger }
-                                ] %}
-                                    {% if group.show %}
-                                        [{
-                                            text: "{{ group.label|escape("js") }}",
-                                            style: { bold: true },
-                                            fillColor: '#F5F5F5',
-                                            colSpan: {{ columnCount }},
-                                            margin: 3
-                                        },
-                                        {% for i in range(2, columnCount) %}{},{% endfor %}
-                                        ],
-                                        {% for payment in group.ledger %}
-                                        [
-                                            {% if GET['checkboxes'] %}{ text: '' },{% endif %}
-                                            { text: '' },
-                                            {
-                                                stack: [
-                                                    { text: "{{ payment.payments_supplier|escape("js") }}" },
-                                                    { text: "{{ payment.payments_comment|escape("js") }}", color: '#595959', margin: [0, 2, 0, 0] }
-                                                ]
-                                            },
-                                            {% if GET['masses'] %}{ text: '' },{% endif %}
-                                            {% if project.projectsTypes_config_finance == 1 %}
-                                                { text: "{% if GET['prices'] %}{{ payment.payments_amount|moneyDecimal|escape("js") }}{% endif %}", style: { alignment: 'right' } },
-                                                { text: "{{ payment.payments_quantity|escape("js") }}", style: { alignment: 'right' } },
-                                                { text: '' },
-                                                { text: '' },
-                                                { text: "{% if GET['prices'] %}{{ payment.payments_amountTotal|moneyDecimal|escape("js") }}{% endif %}", style: { alignment: 'right' } },
-                                            {% endif %}
-                                        ],
-                                        {% endfor %}
-                                    {% endif %}
-                                {% endfor %}
-                            ],
-                        },
-                        layout: {
-                            hLineWidth: function(i, node) {
-                                if (i === 0 || i === node.table.body.length) return 0;
-                                if (i === 1) return 1;
-                                return 0.5;
-                            },
-                            vLineWidth: function() { return 0; },
-                            hLineColor: function(i) { return i === 1 ? 'black' : '#aaaaaa'; },
-                            paddingLeft: function() { return 2; },
-                            paddingRight: function() { return 2; },
-                            paddingTop: function() { return 2; },
-                            paddingBottom: function() { return 2; }
-                        },
-                        margin: [ 0, 10, 0, 10 ]
-                    },
-                {% endif %}
+                    {% set recap = [] %}
+                    {% if allAssets|length > 0 %}{% set recap = recap|merge([allAssets|length ~ ' Item' ~ (allAssets|length != 1 ? 's' : '')]) %}{% endif %}
+                    {% if showSubHires %}{% set recap = recap|merge([FINANCIALS.payments.subHire.ledger|length ~ ' Additional Hire' ~ (FINANCIALS.payments.subHire.ledger|length != 1 ? 's' : '')]) %}{% endif %}
+                    {% if showSales %}{% set recap = recap|merge([FINANCIALS.payments.sales.ledger|length ~ ' Sale' ~ (FINANCIALS.payments.sales.ledger|length != 1 ? 's' : '')]) %}{% endif %}
+                    {% if showStaff %}{% set recap = recap|merge([FINANCIALS.payments.staff.ledger|length ~ ' Staff']) %}{% endif %}
+                    {% if recap|length > 0 %}{ text: "{{ recap|join(', ')|escape("js") }}", style: { fontSize: 9, bold: true, alignment: 'right' } },{% endif %}
                 {% if GET['assets'] and project.projectsTypes_config_assets == 1 %}
                     {% if GET['flagsBlocks'] %}{ text: "[F] indicates asset flagged, [B] indicates asset blocked" },{% endif %}
                     { text: "[L] indicates asset linked to another" },
@@ -349,22 +314,22 @@
                         widths: [ "35%", "15%", "35%", "15%"],
                         body: [
                             [
-                                { text: "{% if GET['sales'] %}Sales{% endif %}" },
-                                { text: "{% if GET['sales'] %}{{ FINANCIALS.payments.sales.total|money|escape("js") }}{% endif %}", style: { alignment: 'right' } },
-                                { text: "Equipment SubTotal" },
+                                { text: "{% if showSubHires %}Additional Hires{% endif %}" },
+                                { text: "{% if showSubHires %}{{ FINANCIALS.payments.subHire.total|money|escape("js") }}{% endif %}", style: { alignment: 'right' } },
+                                { text: "Equipment" },
                                 { text: "{{ FINANCIALS.prices.subTotal|money|escape("js") }}", style: { alignment: 'right' } },
                             ],
                             [
-                                { text: "{% if GET['staff'] %}Staffing{% endif %}" },
-                                { text: "{% if GET['staff'] %}{{ FINANCIALS.payments.staff.total|money|escape("js") }}{% endif %}", style: { alignment: 'right' } },
+                                { text: "{% if showSales %}Sales{% endif %}" },
+                                { text: "{% if showSales %}{{ FINANCIALS.payments.sales.total|money|escape("js") }}{% endif %}", style: { alignment: 'right' } },
                                 { text: "{% if FINANCIALS.prices.discounts|moneyPositive %}Discounts{% else %}Adjustments{% endif %}" },
                                 { text: "{% if FINANCIALS.prices.discounts|moneyPositive %}-{{ FINANCIALS.prices.discounts|money|escape("js") }}{% else %}None{% endif %}", style: { alignment: 'right' } },
                             ],
                             [
-                                { text: "{% if GET['subHires'] %}Sub Hires{% endif %}" },
-                                { text: "{% if GET['subHires'] %}{{ FINANCIALS.payments.subHire.total|money|escape("js") }}{% endif %}", style: { alignment: 'right' } },
-                                { text: "Equipment Total", style: { bold: true } },
-                                { text: "{{ FINANCIALS.prices.total|money|escape("js") }}", style: { alignment: 'right' } },
+                                { text: "{% if showStaff %}Staff{% endif %}" },
+                                { text: "{% if showStaff %}{{ FINANCIALS.payments.staff.total|money|escape("js") }}{% endif %}", style: { alignment: 'right' } },
+                                { text: "Equipment SubTotal", style: { bold: true } },
+                                { text: "{{ FINANCIALS.prices.total|money|escape("js") }}", style: { alignment: 'right', bold: true } },
                             ],
                             {% if GET['insurance'] %}
                             [
@@ -374,36 +339,54 @@
                                 { text: "{{ FINANCIALS.insurance.total|money|escape("js") }}", style: { alignment: 'right' } },
                             ],
                             {% endif %}
-                            {% if GET['type'] == "invoice" %}
                             [
-                                { text: "" },
-                                { text: "" },
-                                { text: "SubTotal", style: { bold: true } },
-                                { text: "{{ FINANCIALS.payments.subTotal|money|escape("js") }}", style: { alignment: 'right' } },
+                                { text: "Other / Additional Total", style: { bold: true } },
+                                { text: "{{ FINANCIALS.extrasTotal|money|escape("js") }}", style: { alignment: 'right', bold: true } },
+                                { text: "Equipment Total", style: { bold: true } },
+                                { text: "{{ FINANCIALS.equipmentSubTotal|money|escape("js") }}", style: { alignment: 'right', bold: true } },
                             ],
-                            {% endif %}
-                            {% if GET['vat'] %}
                             [
                                 { text: "" },
                                 { text: "" },
-                                { text: "VAT{% if FINANCIALS.vat.isExport %} (Export){% endif %}" },
+                                { text: "SubTotal excl. VAT", style: { bold: true } },
+                                { text: "{{ FINANCIALS.payments.subTotal|money|escape("js") }}", style: { alignment: 'right', bold: true } },
+                            ],
+                            {% if GET['vat'] and FINANCIALS.vat.rate != 0 %}
+                            [
+                                { text: "" },
+                                { text: "" },
+                                { text: "VAT ({{ FINANCIALS.vat.rate|escape("js") }}%)" },
                                 { text: "{{ FINANCIALS.vat.total|money|escape("js") }}", style: { alignment: 'right' } },
                             ],
                             {% endif %}
-                            {% if GET['type'] == "invoice" %}
                             [
                                 { text: "" },
                                 { text: "" },
-                                { text: "Payments Received to Date" },
+                                { text: "Grand Total", style: { bold: true } },
+                                { text: "{{ FINANCIALS.payments.grandTotal|money|escape("js") }}", style: { alignment: 'right', bold: true } },
+                            ],
+                            {% if GET['type'] != 'quote' %}
+                            {% for payment in FINANCIALS.payments.received.ledger %}
+                            [
+                                { text: "" },
+                                { text: "" },
+                                { text: "Paid {{ payment.payments_date|date("j M Y")|escape("js") }}{% if payment.payments_method %} ({{ payment.payments_method|escape("js") }}){% endif %}" },
+                                { text: "-{{ payment.payments_amountTotal|money|escape("js") }}", style: { alignment: 'right' } },
+                            ],
+                            {% endfor %}
+                            [
+                                { text: "" },
+                                { text: "" },
+                                { text: "Already Paid" },
                                 { text: "-{{ FINANCIALS.payments.received.total|money|escape("js") }}", style: { alignment: 'right' } },
                             ],
-                            {% endif %}
                             [
                                 { text: "" },
                                 { text: "" },
-                                { text: "{% if GET['type'] == 'quote' %}Grand Total{% else %}Grand Total Outstanding{% endif %}", style: { bold: true } },
-                                { text: "{{ FINANCIALS.payments.total|money|escape("js") }}", style: { alignment: 'right' } },
+                                { text: "Remaining to be Paid", style: { bold: true } },
+                                { text: "{{ FINANCIALS.payments.total|money|escape("js") }}", style: { alignment: 'right', bold: true } },
                             ],
+                            {% endif %}
                         ],
                     },
                     layout: 'noBorders',

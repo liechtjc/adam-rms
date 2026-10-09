@@ -287,6 +287,10 @@ function projectFinancials($project) {
         ? new Money($project['projects_insurance_amount'], new Currency($AUTH->data['instance']['instances_config_currency']))
         : $return['prices']['subTotal']->multiply($project['projects_insurance_rate'] / 100);
 
+    //Partial subtotals for the PDF totals block: equipment (incl. insurance) and additional hires + sales + staff
+    $return['equipmentSubTotal'] = $return['prices']['total']->add($return['insurance']['total']);
+    $return['extrasTotal'] = $return['payments']['subHire']['total']->add($return['payments']['sales']['total'],$return['payments']['staff']['total']);
+
     $return['payments']['subTotal'] = $return['prices']['total']->add($return['payments']['sales']['total'],$return['payments']['subHire']['total'],$return['payments']['staff']['total'],$return['insurance']['total']);
 
     //VAT - applies to every project at the instance rate, unless the project is marked as an Export

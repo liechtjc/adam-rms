@@ -278,6 +278,12 @@ $PAGEDATA['BOARDASSETS'] = buildAssetBoard($statuses, $PAGEDATA['FINANCIALS'], $
 - Edits (comment/price/discount/status/swap/remove) still `location.reload()`; collapsed categories/types are kept in `localStorage` (`adamrms-project-{id}-assets-state`) so the view reopens the same way.
 - Money is always formatted in the viewing instance's currency; there is no per-owner currency conversion.
 
+### PDF Export (Quote / Invoice / Delivery Note)
+`src/project/pdf.twig` builds the pdfmake document; options come from the export modal in `project_index.twig` (`GET[...]` flags). "Client Contact Name" and "Individual Items in Equipment List" are ticked by default.
+- Additional Hires, Sales and Staff ledger entries render as group rows inside the equipment table (captured once into `ledgerRows`), followed by a recap line (`12 Items, 1 Additional Hire, ...`).
+- Totals block: left = Additional Hires / Sales / Staff + "Other / Additional Total" (`FINANCIALS.extrasTotal`); right = Equipment, Adjustments, Equipment SubTotal, Insurance, Equipment Total (`FINANCIALS.equipmentSubTotal`), then SubTotal excl. VAT, VAT (hidden at 0%) and Grand Total. Quotes stop there; invoices/delivery notes add each payment received, Already Paid and Remaining to be Paid (`payments.total`, which is also the Swiss QR-bill amount).
+- Header order: Project Date, Pick-up / Drop-off, then Coeff.
+
 ### Audit Logging
 ```php
 $bCMS->auditLog($actionType, $table, $data, $userid, $useridTo, $projectid, $targetid);

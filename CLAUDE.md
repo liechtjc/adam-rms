@@ -39,10 +39,8 @@ git merge main
 # Resolve conflicts if any (our customizations may conflict with upstream changes)
 git push origin stage
 
-# After testing on stage, update production
-git checkout production
-git merge stage
-git push origin production
+# After testing on stage, update production via a PR (see "Deploy to Production")
+gh pr create --repo liechtjc/adam-rms --base production --head stage
 ```
 
 **Important:** Do NOT automatically sync with upstream. Only pull updates when:
@@ -86,13 +84,16 @@ git push origin stage
 - Test thoroughly before promoting to production
 
 #### Deploy to Production (Live)
-Only after successful testing on stage:
+Only after successful testing on stage, promote through a pull request `stage` → `production` on our fork:
 ```bash
-git checkout production
-git merge stage
-git push origin production
+gh pr create --repo liechtjc/adam-rms --base production --head stage \
+  --title "Release: <summary>" --body "<what goes live>"
+# Wait for CI (reviewdog, Docker build), then merge with a merge commit
+gh pr merge <number> --repo liechtjc/adam-rms --merge
 ```
-- Triggers automated deployment to production environment
+- PRs are **only ever opened on `liechtjc/adam-rms`**: `gh` otherwise defaults to the upstream `adam-rms/adam-rms`. Always pass `--repo liechtjc/adam-rms` (and `gh repo set-default liechtjc/adam-rms` once per clone). Never open a PR, issue or comment on upstream.
+- Feature branches still merge directly into `stage` (no PR).
+- Merging does not deploy: redeploy production manually afterwards.
 
 ### Deployment Configuration
 - Docker compose files in `deploy/` directory
@@ -111,7 +112,8 @@ git push origin production
 ⚠️ **ALL custom work happens on `stage`** or feature branches from `stage`  
 ⚠️ **ALWAYS test on `stage` before promoting to `production`**  
 ⚠️ **NEVER automatically sync with upstream** - only on explicit request  
-⚠️ **When syncing upstream, always test thoroughly on `stage` before `production`**
+⚠️ **When syncing upstream, always test thoroughly on `stage` before `production`**  
+⚠️ **`production` only changes through a PR on `liechtjc/adam-rms`** - never push to it directly, never target the upstream repo
 
 ### Hotfix Workflow (Emergency Only)
 If production is broken and needs immediate fix:
@@ -122,10 +124,12 @@ git checkout -b hotfix/critical-issue
 # Make fix and test
 git commit -m "Hotfix: critical issue"
 
-# Merge to production
+# Merge to production via a PR on our fork
+git push origin hotfix/critical-issue
+gh pr create --repo liechtjc/adam-rms --base production --head hotfix/critical-issue
+gh pr merge <number> --repo liechtjc/adam-rms --merge
 git checkout production
-git merge hotfix/critical-issue
-git push origin production
+git pull origin production
 
 # Backport to stage
 git checkout stage
